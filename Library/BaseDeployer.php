@@ -67,8 +67,8 @@ abstract class BaseDeployer
         $this->urls = $config['urls'];
         $this->localRepositoryDir = $config['local_repository_dir'];
 //        $this->new_version = $config['new_version'];
-        $this->checkoutUrl = $config['default_checkout_url'];
-        $this->checkoutBranch = $config['default_checkout_branch'];
+        if(!empty($config['default_checkout_url'])) $this->checkoutUrl = $config['default_checkout_url'];
+        if(!empty($config['default_checkout_branch'])) $this->checkoutBranch = $config['default_checkout_branch'];
         if(!empty($config['default_repository_dir'])) $this->remoteRepositoryDir = $config['default_repository_dir'];
         if(!empty($config['default_production_dir'])) $this->remoteProductionDir = $config['default_production_dir'];
         if(!empty($config['clean_before_days'])) $this->sshPort = $config['clean_before_days'];
@@ -77,6 +77,8 @@ abstract class BaseDeployer
         if(!empty($config['checkout_branch'])) $this->checkoutBranch = $config['checkout_branch'];
         if(!empty($config['repository_dir'])) $this->remoteRepositoryDir = $config['repository_dir'];
         if(!empty($config['production_dir'])) $this->remoteProductionDir = $config['production_dir'];
+        if(empty($this->checkoutUrl)) throw new \Exception('Checkout url not defined on default_checkout_url or zone checkout_url config.');
+        if(empty($this->checkoutBranch)) throw new \Exception('Checkout url not defined on default_checkout_branch or zone checkout_branch config.');
         if(empty($this->remoteRepositoryDir)) throw new \Exception('Remote repository dir not defined on default_repository_dir or zone repository_dir config.');
         if(empty($this->remoteProductionDir)) throw new \Exception('Remote production dir not defined on default_repository_dir or zone production_dir config.');
 
