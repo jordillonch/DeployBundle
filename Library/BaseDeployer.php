@@ -363,8 +363,7 @@ abstract class BaseDeployer
             $this->code2ProductionBefore();
 
             $production_code_dir = $this->getRemoteProductionCodeDir();
-            $this->logger->debug('create symbolic link');
-            $this->execRemoteServers('ln -sfn ' . $new_repository_dir . ' ' . $production_code_dir);
+            $this->atomicChangeOfCode2Production($new_repository_dir, $production_code_dir);
             $this->logger->debug('clear cache');
             $this->runClearCache();
             $this->setCurrentVersionAsNewVersion();
@@ -390,8 +389,7 @@ abstract class BaseDeployer
               // restore symbolics links
               $production_code_dir = $this->getRemoteProductionCodeDir();
               $rollback_repository_dir = $this->remoteRepositoryDirRollback;
-              $this->logger->debug('restore symbolic link');
-              $this->execRemoteServers('ln -sfn ' . $rollback_repository_dir . ' ' . $production_code_dir);
+              $this->atomicRollbackChangeCode2Production($rollback_repository_dir, $production_code_dir);
               $this->logger->debug('clear cache');
               $this->runClearCache();
 
@@ -834,6 +832,26 @@ abstract class BaseDeployer
         if (isset($expServer[1])) $port = $expServer[1];return array($host, $port);
 
         return array($host, $port);
+    }
+
+    /**
+     * @param $new_repository_dir
+     * @param $production_code_dir
+     */
+    protected function atomicChangeOfCode2Production($new_repository_dir, $production_code_dir)
+    {
+        $this->logger->debug('create symbolic link');
+        $this->execRemoteServers('ln -sfn ' . $new_repository_dir . ' ' . $production_code_dir);
+    }
+
+    /**
+     * @param $rollback_repository_dir
+     * @param $production_code_dir
+     */
+    protected function atomicRollbackChangeCode2Production($rollback_repository_dir, $production_code_dir)
+    {
+        $this->logger->debug('restore symbolic link');
+        $this->execRemoteServers('ln -sfn ' . $rollback_repository_dir . ' ' . $production_code_dir);
     }
 
 }
