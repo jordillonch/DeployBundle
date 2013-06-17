@@ -262,7 +262,7 @@ abstract class BaseDeployer
         foreach ($this->urls as $server)
         {
             list($host, $port) = $this->extractHostPort($server);
-            $this->exec('rsync -ar -e "ssh -p ' . $port . '" "' . __DIR__ . '/Tools/Cache/clearCache.php" "' . $host . ':' . $bin_dir. '"');
+            if($host != 'localhost') $this->exec('rsync -ar -e "ssh -p ' . $port . '" "' . __DIR__ . '/Tools/Cache/clearCache.php" "' . $host . ':' . $bin_dir. '"');
         }
     }
 
