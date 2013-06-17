@@ -423,7 +423,7 @@ abstract class BaseDeployer
         foreach ($servers as $server)
         {
             list($host, $port) = $this->extractHostPort($server);
-            $sshCommand = 'ssh -p ' . $port . ' -o "LogLevel=quiet" -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" ' . $host . ' "' . $command . '"';
+            $sshCommand = 'ssh -t -p ' . $port . ' -o "LogLevel=quiet" -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" ' . $host . ' "' . $command . '"';
             if($this->dryMode) $this->output->writeln($sshCommand);
             else $this->exec($sshCommand);
         }
