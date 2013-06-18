@@ -26,6 +26,8 @@ abstract class BaseDeployer
     protected $newVersion;
     protected $currentVersion;
     protected $output;
+    protected $sudo = false;
+
     /**
      * @var LoggerInterface
      */
@@ -71,12 +73,14 @@ abstract class BaseDeployer
         if(!empty($config['default_checkout_branch'])) $this->checkoutBranch = $config['default_checkout_branch'];
         if(!empty($config['default_repository_dir'])) $this->remoteRepositoryDir = $config['default_repository_dir'];
         if(!empty($config['default_production_dir'])) $this->remoteProductionDir = $config['default_production_dir'];
+        if(!empty($config['default_sudo'])) $this->sudo = $config['default_sudo'];
         if(!empty($config['clean_before_days'])) $this->sshPort = $config['clean_before_days'];
         if(!empty($config['ssh_port'])) $this->sshPort = $config['ssh_port'];
         if(!empty($config['checkout_url'])) $this->checkoutUrl = $config['checkout_url'];
         if(!empty($config['checkout_branch'])) $this->checkoutBranch = $config['checkout_branch'];
         if(!empty($config['repository_dir'])) $this->remoteRepositoryDir = $config['repository_dir'];
         if(!empty($config['production_dir'])) $this->remoteProductionDir = $config['production_dir'];
+        if(!empty($config['sudo'])) $this->sudo = $config['sudo'];
         if(empty($this->checkoutUrl)) throw new \Exception('Checkout url not defined on default_checkout_url or zone checkout_url config.');
         if(empty($this->checkoutBranch)) throw new \Exception('Checkout url not defined on default_checkout_branch or zone checkout_branch config.');
         if(empty($this->remoteRepositoryDir)) throw new \Exception('Remote repository dir not defined on default_repository_dir or zone repository_dir config.');
@@ -127,9 +131,14 @@ abstract class BaseDeployer
             throw new \Exception("Repository directories do not exists: " . $this->getDataDir());
 
         // initialize remote repository directories if not exists
-        $this->execRemoteServers('mkdir -p "' . $this->getRemoteCodeDir() . '"');
-        $this->execRemoteServers('mkdir -p "' . $this->getRemoteSharedDir() . '"');
-        $this->execRemoteServers('mkdir -p "' . $this->getRemoteBinDir() . '"');
+        $sudo = '';
+        if($this->sudo) $sudo = 'sudo ';
+        $this->execRemoteServers($sudo . 'mkdir -p "' . $this->getRemoteCodeDir() . '"');
+        $this->execRemoteServers($sudo . 'mkdir -p "' . $this->getRemoteSharedDir() . '"');
+        $this->execRemoteServers($sudo . 'mkdir -p "' . $this->getRemoteBinDir() . '"');
+        $this->execRemoteServers($sudo . 'chmod a+wrx "' . $this->getRemoteCodeDir() . '"');
+        $this->execRemoteServers($sudo . 'chmod a+wrx "' . $this->getRemoteSharedDir() . '"');
+        $this->execRemoteServers($sudo . 'chmod a+wrx "' . $this->getRemoteBinDir() . '"');
 
         // copy clear cache script to servers
         $this->clearCacheCode2Servers();
