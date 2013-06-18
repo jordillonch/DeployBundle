@@ -851,7 +851,9 @@ abstract class BaseDeployer
     protected function atomicChangeOfCode2Production($new_repository_dir, $production_code_dir)
     {
         $this->logger->debug('create symbolic link');
-        $this->execRemoteServers('ln -sfn ' . $new_repository_dir . ' ' . $production_code_dir);
+        $sudo = '';
+        if($this->sudo) $sudo = 'sudo ';
+        $this->execRemoteServers($sudo . 'ln -sfn ' . $new_repository_dir . ' ' . $production_code_dir);
     }
 
     /**
@@ -861,7 +863,9 @@ abstract class BaseDeployer
     protected function atomicRollbackChangeCode2Production($rollback_repository_dir, $production_code_dir)
     {
         $this->logger->debug('restore symbolic link');
-        $this->execRemoteServers('ln -sfn ' . $rollback_repository_dir . ' ' . $production_code_dir);
+        $sudo = '';
+        if($this->sudo) $sudo = 'sudo ';
+        $this->execRemoteServers($sudo . 'ln -sfn ' . $rollback_repository_dir . ' ' . $production_code_dir);
     }
 
 }
