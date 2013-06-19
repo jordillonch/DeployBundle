@@ -256,7 +256,7 @@ abstract class BaseDeployer
           try
           {
             list($host, $port) = $this->extractHostPort($server);
-            $this->exec('rsync -ar --delete -e "ssh -p ' . $port . '" ' . $rsync_params . ' "' . $new_repository_dir . '" "' . $host . ':' . $code_dir . '"');
+            $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsync_params . ' "' . $new_repository_dir . '" "' . $host . ':' . $code_dir . '"');
           }
           catch(\Exception $e)
           {
@@ -271,7 +271,7 @@ abstract class BaseDeployer
         foreach ($this->urls as $server)
         {
             list($host, $port) = $this->extractHostPort($server);
-            if($host != 'localhost') $this->exec('rsync -ar -e "ssh -p ' . $port . '" "' . __DIR__ . '/Tools/Cache/clearCache.php" "' . $host . ':' . $bin_dir. '"');
+            if($host != 'localhost') $this->exec('rsync -ar -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" "' . __DIR__ . '/Tools/Cache/clearCache.php" "' . $host . ':' . $bin_dir. '"');
         }
     }
 
