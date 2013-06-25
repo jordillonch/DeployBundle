@@ -20,6 +20,7 @@ abstract class BaseDeployer
     protected $location;
     protected $checkoutUrl;
     protected $checkoutBranch;
+    protected $checkoutProxy = false;
     protected $cleanBeforeDays = 7;
     protected $dryMode = false;
     protected $sshPort = 22;
@@ -72,6 +73,7 @@ abstract class BaseDeployer
 //        $this->new_version = $config['new_version'];
         if(!empty($config['default_checkout_url'])) $this->checkoutUrl = $config['default_checkout_url'];
         if(!empty($config['default_checkout_branch'])) $this->checkoutBranch = $config['default_checkout_branch'];
+        if(!empty($config['default_checkout_proxy'])) $this->checkoutProxy = $config['default_checkout_proxy'];
         if(!empty($config['default_repository_dir'])) $this->remoteRepositoryDir = $config['default_repository_dir'];
         if(!empty($config['default_production_dir'])) $this->remoteProductionDir = $config['default_production_dir'];
         if(!empty($config['default_sudo'])) $this->sudo = $config['default_sudo'];
@@ -79,6 +81,7 @@ abstract class BaseDeployer
         if(!empty($config['ssh_port'])) $this->sshPort = $config['ssh_port'];
         if(!empty($config['checkout_url'])) $this->checkoutUrl = $config['checkout_url'];
         if(!empty($config['checkout_branch'])) $this->checkoutBranch = $config['checkout_branch'];
+        if(!empty($config['checkout_proxy'])) $this->checkoutProxy = $config['checkout_proxy'];
         if(!empty($config['repository_dir'])) $this->remoteRepositoryDir = $config['repository_dir'];
         if(!empty($config['production_dir'])) $this->remoteProductionDir = $config['production_dir'];
         if(!empty($config['sudo'])) $this->sudo = $config['sudo'];
@@ -226,24 +229,38 @@ abstract class BaseDeployer
     protected function downloadCodeGit()
     {
         $this->logger->debug(__METHOD__);
+
+        // Update repo if it is a proxy of a remote repo
+        if($this->checkoutProxy) {
+            $urlParsed = parse_url($this->checkoutUrl);
+            $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" pull');
+        }
+
+        // Clone repo
         $this->exec('git clone "' . $this->checkoutUrl . '" "' . $this->getLocalNewRepositoryDir() . '" --branch "' . $this->checkoutBranch . '" --depth=1');
+
+        // Overwrite origin remote if it is a proxy
+        if($this->checkoutProxy) {
+            $originUrlProxyRepo = $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" config --get remote.origin.url');
+            $this->exec('git --git-dir="' . $this->getLocalNewRepositoryDir() . '/.git" config --replace-all remote.origin.url "' . $originUrlProxyRepo . '"');
+        }
     }
 
     protected function getDiffFilesGit($gitDirFrom, $gitDirTo)
     {
-      exec('git --git-dir="'.$gitDirFrom.'/.git" log -1 --pretty=format:"%H"', $gitUidFrom);
-      if(isset($gitUidFrom[0])) $gitUidFrom = $gitUidFrom[0];
-      exec('git --git-dir="'.$gitDirTo.'/.git" log -1 --pretty=format:"%H"', $gitUidTo);
-      if(isset($gitUidTo[0])) $gitUidTo = $gitUidTo[0];
-      if($gitUidFrom && $gitUidFrom)
-      {
-          echo 'git --git-dir="'.$gitDirTo.'/.git" diff '.$gitUidTo.' '.$gitUidFrom.' --name-only' . "\n";
-        exec('git --git-dir="'.$gitDirTo.'/.git" diff '.$gitUidTo.' '.$gitUidFrom.' --name-only', $diffFiles);
+        exec('git --git-dir="'.$gitDirFrom.'/.git" log -1 --pretty=format:"%H"', $gitUidFrom);
+        if(isset($gitUidFrom[0])) $gitUidFrom = $gitUidFrom[0];
+        exec('git --git-dir="'.$gitDirTo.'/.git" log -1 --pretty=format:"%H"', $gitUidTo);
+        if(isset($gitUidTo[0])) $gitUidTo = $gitUidTo[0];
+        if($gitUidFrom && $gitUidFrom)
+        {
+            echo 'git --git-dir="'.$gitDirTo.'/.git" diff '.$gitUidTo.' '.$gitUidFrom.' --name-only' . "\n";
+            exec('git --git-dir="'.$gitDirTo.'/.git" diff '.$gitUidTo.' '.$gitUidFrom.' --name-only', $diffFiles);
 
-        return $diffFiles;
-      }
+            return $diffFiles;
+        }
 
-      return array();
+        return array();
     }
 
     public function code2Servers($rsync_params = '')

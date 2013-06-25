@@ -46,4 +46,5 @@ Configure sshd to accept PubkeyAuthentication
 - Tests
 - Helpers (cache warmer, composer update...)
 - Ssh with Process component
+- Verbose mode
 

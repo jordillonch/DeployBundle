@@ -16,7 +16,7 @@ class ConfigureCommand extends BaseCommand
     protected function configure()
     {
         $this->addArgument('zone', InputArgument::REQUIRED, 'Zone name. It must exists in jordi_llonch_deploy.zones config.');
-        $this->addArgument('action', InputArgument::REQUIRED, 'Action: add, set, rm');
+        $this->addArgument('action', InputArgument::REQUIRED, 'Action: add, set, rm, list, list_json');
         $this->addArgument('url', InputArgument::OPTIONAL, 'Url/s separated by comma');
 
         $this
@@ -57,7 +57,7 @@ EOT
                 $output->writeln($configure->listUrls($zone, Configure::OUTPUT_JSON));
                 break;
             default :
-                throw new \Exception('Actions must be: add, set or rm.');
+                throw new \Exception('Actions must be: add, set, rm, list or list_json');
         }
 
         $configure->writeParametersFile();
