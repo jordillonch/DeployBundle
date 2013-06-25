@@ -48,7 +48,6 @@ class DeployersCompilerPass implements CompilerPassInterface
             $pluginId = $this->getDeployer($zoneConfig['deployer']);
             $zoneDefinition = clone $container->getDefinition($pluginId);
             $zoneDefinition->addMethodCall('setZoneName', array($name));
-            if(!isset($generalConfig['local_repository_dir'])) $generalConfig['local_repository_dir'] = $container->getParameter('kernel.cache_dir') . '/jordi_llonch_deploy';
             $zoneDefinition->addMethodCall('setConfig', array($generalConfig, $zonesConfig));
 
             // Add zone to the zone manager

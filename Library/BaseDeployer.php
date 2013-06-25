@@ -67,6 +67,7 @@ abstract class BaseDeployer
         $this->mailTo = $config['mail_to'];
         $this->dryMode = $config['dry_mode'];
         $this->urls = $config['urls'];
+        if(empty($config['local_repository_dir'])) throw new \Exception('Local repository not defined on local_repository_dir config.');
         $this->localRepositoryDir = $config['local_repository_dir'];
 //        $this->new_version = $config['new_version'];
         if(!empty($config['default_checkout_url'])) $this->checkoutUrl = $config['default_checkout_url'];

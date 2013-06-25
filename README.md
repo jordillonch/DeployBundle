@@ -43,3 +43,7 @@ Configure sshd to accept PubkeyAuthentication
 ## TODO
 
 - Configurator
+- Tests
+- Helpers (cache warmer, composer update...)
+- Ssh with Process component
+
