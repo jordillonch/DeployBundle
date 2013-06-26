@@ -513,12 +513,11 @@ abstract class BaseDeployer
     protected function exec($command)
     {
         $this->logger->debug('exec: ' . $command);
-        if ($this->dryMode)
-            return;
-        $r = system($command, $return_var);
-        if ($r === false || $return_var != 0) {
-            throw new \Exception('ERROR executing: ' . $command . "\n" . $r . "\n");
-        }
+
+        if ($this->dryMode) return;
+
+        $r = exec($command, $output, $return_var);
+        if ($r === false || $return_var != 0) throw new \Exception('ERROR executing: ' . $command . "\n" . $r);
 
         return $r;
     }
