@@ -63,6 +63,7 @@ class Configure
         $this->checkZone($zone);
         $url = $this->sanitizeUrl($url);
         $url = array_merge($this->zones[$zone]['urls'], $url);
+        $url = array_unique($url);
         $this->zones[$zone]['urls'] = $url;
     }
 
