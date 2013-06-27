@@ -27,7 +27,12 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $confirmation = $this->getHelper('dialog')->askConfirmation($output, '<question>WARNING! You are about to put code to production. Are you sure you wish to continue? (y/n)</question>', 'y');
+        if($input->isInteractive()) {
+            $dialog = $this->getHelperSet()->get('dialog');
+            $confirmation = $dialog->askConfirmation($output, '<question>WARNING! You are about to put code to production. Are you sure you wish to continue? (y/n)</question>', false);
+        }
+        else $confirmation = true;
+
         if ($confirmation === true) {
             $this->deployer->runCode2Production();
         } else {
