@@ -145,8 +145,7 @@ abstract class BaseDeployer
             throw new \Exception("Repository directories do not exists: " . $this->getDataDir());
 
         // initialize remote repository directories if not exists
-        $sudo = '';
-        if ($this->sudo) $sudo = 'sudo ';
+        $sudo = $this->sudo ? 'sudo ' : '';
         $this->execRemoteServers($sudo . 'mkdir -p "' . $this->getRemoteCodeDir() . '"');
         $this->execRemoteServers($sudo . 'mkdir -p "' . $this->getRemoteSharedDir() . '"');
         $this->execRemoteServers($sudo . 'mkdir -p "' . $this->getRemoteBinDir() . '"');
@@ -561,8 +560,10 @@ abstract class BaseDeployer
     public function clean()
     {
         $this->logger->debug('clean old code');
+        $sudo = $this->sudo ? 'sudo ' : '';
         $dir = new \DirectoryIterator($this->getLocalCodeDir());
         $count = \iterator_count($dir);
+        $firstTextOut = false;
         foreach ($dir as $fileinfo) {
             if ($count <= 4)
                 break; // left a minimum of 4 items (., .., current repo and a bak one repo)
@@ -578,9 +579,10 @@ abstract class BaseDeployer
                 list($date, $time) = $arr_info;
                 if ($fileinfo->getCTime() < time() - ($this->cleanBeforeDays * 24 * 3600)) {
                     $this->logger->debug('removing: ' . $this->getLocalCodeDir() . '/' . $fileinfo);
-                    $this->output->writeln('<info>Removing old code...</info>');
-                    $this->exec('rm -rf ' . $this->getLocalCodeDir() . '/' . $fileinfo);
-                    $this->execRemoteServers('rm -rf ' . $this->getRemoteCodeDir() . '/' . $fileinfo);
+                    if(!$firstTextOut) $this->output->writeln('<info>Removing old code...</info>');
+                    $firstTextOut = true;
+                    $this->exec($sudo . 'rm -rf ' . $this->getLocalCodeDir() . '/' . $fileinfo);
+                    $this->execRemoteServers($sudo. 'rm -rf ' . $this->getRemoteCodeDir() . '/' . $fileinfo);
                 }
             }
             $count--;
@@ -936,8 +938,7 @@ abstract class BaseDeployer
     protected function atomicChangeOfCode2Production($newRepositoryDir, $productionCodeDir)
     {
         $this->logger->debug('create symbolic link');
-        $sudo = '';
-        if ($this->sudo) $sudo = 'sudo ';
+        $sudo = $this->sudo ? 'sudo ' : '';
         $this->execRemoteServers($sudo . 'ln -sfn ' . $newRepositoryDir . ' ' . $productionCodeDir);
     }
 
@@ -948,8 +949,7 @@ abstract class BaseDeployer
     protected function atomicRollbackChangeCode2Production($rollbackRepositoryDir, $productionCodeDir)
     {
         $this->logger->debug('restore symbolic link');
-        $sudo = '';
-        if ($this->sudo) $sudo = 'sudo ';
+        $sudo = $this->sudo ? 'sudo ' : '';
         $this->execRemoteServers($sudo . 'ln -sfn ' . $rollbackRepositoryDir . ' ' . $productionCodeDir);
     }
 
