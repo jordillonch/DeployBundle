@@ -24,12 +24,12 @@ abstract class BaseDeployer
     protected $checkoutProxy = false;
     protected $cleanBeforeDays = 7;
     protected $dryMode = false;
-    protected $sshPort = 22;
     protected $newVersion;
     protected $currentVersion;
     protected $output;
     protected $sudo = false;
     protected $numOldVersionsToCopy = 3;
+    protected $config;
 
     /**
      * @var LoggerInterface
@@ -69,34 +69,35 @@ abstract class BaseDeployer
         $zoneConfig = $zonesConfig[$this->getZoneName()];
         $config = \array_merge($generalConfig, $zoneConfig);
 
+        // Check required parameters
+        if (empty($config['project'])) throw new \Exception('Project name not defined in project config parameter.');
+        if (empty($config['environment'])) throw new \Exception('Environment not defined in environment config parameter.');
+        if (empty($config['mail_from'])) throw new \Exception('Mail from not defined in mail_from config parameter.');
+        if (empty($config['mail_to'])) throw new \Exception('Mail to array not defined in mail_to config parameter.');
+        if (empty($config['urls'])) throw new \Exception('Urls array not defined in urls config parameter.');
+        if (empty($config['local_repository_dir'])) throw new \Exception('Local repository not defined in local_repository_dir config parameter.');
+        if (empty($config['checkout_url'])) throw new \Exception('Checkout url not defined in default_checkout_url or zone checkout_url config parameter.');
+        if (empty($config['checkout_branch'])) throw new \Exception('Checkout url not defined in default_checkout_branch or zone checkout_branch config parameter.');
+        if (empty($config['repository_dir'])) throw new \Exception('Remote repository dir not defined in default_repository_dir or zone repository_dir config parameter.');
+        if (empty($config['production_dir'])) throw new \Exception('Remote production dir not defined in default_repository_dir or zone production_dir config parameter.');
+
         // Set config
         $this->project = $config['project'];
         $this->environment = $config['environment'];
-        //if(!empty($config['mail_from'])) $this->mail_from = $config['mail_from'];
+        $this->mailFrom = $config['mail_from'];
         $this->mailTo = $config['mail_to'];
-        $this->dryMode = $config['dry_mode'];
         $this->urls = $config['urls'];
-        if (empty($config['local_repository_dir'])) throw new \Exception('Local repository not defined on local_repository_dir config.');
         $this->localRepositoryDir = $config['local_repository_dir'];
-//        $this->new_version = $config['new_version'];
-        if (!empty($config['default_checkout_url'])) $this->checkoutUrl = $config['default_checkout_url'];
-        if (!empty($config['default_checkout_branch'])) $this->checkoutBranch = $config['default_checkout_branch'];
-        if (!empty($config['default_checkout_proxy'])) $this->checkoutProxy = $config['default_checkout_proxy'];
-        if (!empty($config['default_repository_dir'])) $this->remoteRepositoryDir = $config['default_repository_dir'];
-        if (!empty($config['default_production_dir'])) $this->remoteProductionDir = $config['default_production_dir'];
-        if (!empty($config['default_sudo'])) $this->sudo = $config['default_sudo'];
-        if (!empty($config['clean_before_days'])) $this->sshPort = $config['clean_before_days'];
-        if (!empty($config['ssh_port'])) $this->sshPort = $config['ssh_port'];
-        if (!empty($config['checkout_url'])) $this->checkoutUrl = $config['checkout_url'];
-        if (!empty($config['checkout_branch'])) $this->checkoutBranch = $config['checkout_branch'];
+        $this->checkoutUrl = $config['checkout_url'];
+        $this->checkoutBranch = $config['checkout_branch'];
+        $this->remoteRepositoryDir = $config['repository_dir'];
+        $this->remoteProductionDir = $config['production_dir'];
         if (!empty($config['checkout_proxy'])) $this->checkoutProxy = $config['checkout_proxy'];
-        if (!empty($config['repository_dir'])) $this->remoteRepositoryDir = $config['repository_dir'];
-        if (!empty($config['production_dir'])) $this->remoteProductionDir = $config['production_dir'];
+        if (!empty($config['clean_before_days'])) $this->cleanBeforeDays = $config['clean_before_days'];
         if (!empty($config['sudo'])) $this->sudo = $config['sudo'];
-        if (empty($this->checkoutUrl)) throw new \Exception('Checkout url not defined on default_checkout_url or zone checkout_url config.');
-        if (empty($this->checkoutBranch)) throw new \Exception('Checkout url not defined on default_checkout_branch or zone checkout_branch config.');
-        if (empty($this->remoteRepositoryDir)) throw new \Exception('Remote repository dir not defined on default_repository_dir or zone repository_dir config.');
-        if (empty($this->remoteProductionDir)) throw new \Exception('Remote production dir not defined on default_repository_dir or zone production_dir config.');
+
+        // Save config. Useful for custom configs
+        $this->config = $config;
 
         // get current version, running version
         $current_version_data_file = $this->getLocalDataCurrentVersionFile();
@@ -105,7 +106,8 @@ abstract class BaseDeployer
         else
             $this->currentVersion = null;
 
-        // get new version, to be download
+        // get new version from file
+        // if download a new version is get from remote
         $new_version_data_file = $this->getLocalDataNewVersionFile();
         if (file_exists($new_version_data_file))
             $this->newVersion = file_get_contents($new_version_data_file);
@@ -257,35 +259,21 @@ abstract class BaseDeployer
         }
 
         // Clone repo
-        $this->exec(
-            'git clone "' . $this->checkoutUrl . '" "' . $this->getLocalNewRepositoryDir(
-            ) . '" --branch "' . $this->checkoutBranch . '" --depth=1'
-        );
+        $this->exec('git clone "' . $this->checkoutUrl . '" "' . $this->getLocalNewRepositoryDir() . '" --branch "' . $this->checkoutBranch . '" --depth=1');
 
         // Overwrite origin remote if it is a proxy
         if ($this->checkoutProxy) {
-            $originUrlProxyRepo = $this->exec(
-                'git --git-dir="' . $urlParsed['path'] . '/.git" config --get remote.origin.url'
-            );
-            $this->exec(
-                'git --git-dir="' . $this->getLocalNewRepositoryDir(
-                ) . '/.git" config --replace-all remote.origin.url "' . $originUrlProxyRepo . '"'
-            );
+            $originUrlProxyRepo = $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" config --get remote.origin.url');
+            $this->exec('git --git-dir="' . $this->getLocalNewRepositoryDir() . '/.git" config --replace-all remote.origin.url "' . $originUrlProxyRepo . '"');
         }
     }
 
     protected function getDiffFilesGit($gitDirFrom, $gitDirTo)
     {
-        exec('git --git-dir="' . $gitDirFrom . '/.git" log -1 --pretty=format:"%H"', $gitUidFrom);
-        if (isset($gitUidFrom[0])) $gitUidFrom = $gitUidFrom[0];
-        exec('git --git-dir="' . $gitDirTo . '/.git" log -1 --pretty=format:"%H"', $gitUidTo);
-        if (isset($gitUidTo[0])) $gitUidTo = $gitUidTo[0];
+        $gitUidFrom = $this->getHeadHash($gitDirFrom);
+        $gitUidTo = $this->getHeadHash($gitDirTo);
         if ($gitUidFrom && $gitUidFrom) {
-            echo 'git --git-dir="' . $gitDirTo . '/.git" diff ' . $gitUidTo . ' ' . $gitUidFrom . ' --name-only' . "\n";
-            exec(
-                'git --git-dir="' . $gitDirTo . '/.git" diff ' . $gitUidTo . ' ' . $gitUidFrom . ' --name-only',
-                $diffFiles
-            );
+            exec('git --git-dir="' . $gitDirTo . '/.git" diff ' . $gitUidTo . ' ' . $gitUidFrom . ' --name-only', $diffFiles);
 
             return $diffFiles;
         }
@@ -297,7 +285,7 @@ abstract class BaseDeployer
     {
         $this->logger->debug(__METHOD__);
 
-        $new_repository_dir = $this->getLocalNewRepositoryDir();
+        $newRepositoryDir = $this->getLocalNewRepositoryDir();
         $code_dir = $this->getRemoteCodeDir();
         foreach ($this->urls as $server) {
             try {
@@ -308,7 +296,7 @@ abstract class BaseDeployer
 
                 // Copy code
                 $this->exec(
-                    'rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsync_params . ' "' . $new_repository_dir . '" "' . $host . ':' . $code_dir . '"'
+                    'rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsync_params . ' "' . $newRepositoryDir . '" "' . $host . ':' . $code_dir . '"'
                 );
             } catch (\Exception $e) {
                 throw $e;
@@ -412,14 +400,17 @@ abstract class BaseDeployer
     public function runDownloadCode($new_version)
     {
         // get last version from remote
-        exec('git ls-remote "' . $this->checkoutUrl . '"', $git_versions);
+        if($this->checkoutProxy)
+        {
+            $urlParsed = parse_url($this->checkoutUrl);
+            $git_versions = $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" ls-remote origin ' . $this->checkoutBranch);
+        }
+        else $git_versions = $this->exec('git ls-remote "' . $this->checkoutUrl . '" origin ' . $this->checkoutBranch);
+
+        $git_versions = explode("\n", $git_versions);
         if (!isset($git_versions[0])) throw new \Exception("Git repository empty.");
         $git_version = '';
-        foreach ($git_versions as $item) if (\preg_match(
-            '/' . $this->checkoutBranch . '/',
-            $item
-        )
-        ) $git_version = $item;
+        foreach ($git_versions as $item) if (\preg_match('/' . $this->checkoutBranch . '/', $item)) $git_version = $item;
         if (empty($git_version)) throw new \Exception("Git branch " . $this->checkoutBranch . " not found.");
         $git_version = explode("\t", $git_version);
         $git_version = $git_version[0];
@@ -456,13 +447,13 @@ abstract class BaseDeployer
         $this->setNewVersionRollback();
     }
 
-    public function runCode2Production($new_repository_dir = null, $new_version = null)
+    public function runCode2Production($newRepositoryDir = null, $new_version = null)
     {
         $this->logger->debug(__METHOD__);
         $this->current_version_rollback = $this->currentVersion;
         $this->remoteRepositoryDirRollback = $this->getRemoteCurrentRepositoryDir();
 
-        if ($new_repository_dir == null) $new_repository_dir = $this->getRemoteNewRepositoryDir();
+        if ($newRepositoryDir == null) $newRepositoryDir = $this->getRemoteNewRepositoryDir();
         if ($new_version == null) $new_version = $this->newVersion;
 
         // update last version
@@ -470,11 +461,14 @@ abstract class BaseDeployer
             $this->logger->debug('code2ProductionBefore');
             $this->code2ProductionBefore();
 
-            $production_code_dir = $this->getRemoteProductionCodeDir();
-            $this->atomicChangeOfCode2Production($new_repository_dir, $production_code_dir);
+            $productionCodeDir = $this->getRemoteProductionCodeDir();
+            $this->atomicChangeOfCode2Production($newRepositoryDir, $productionCodeDir);
             $this->logger->debug('clear cache');
             $this->runClearCache();
+
             $this->setCurrentVersionAsNewVersion();
+
+            $this->pushLastDeployTag();
 
             $this->logger->debug('code2ProductionAfter');
             $this->code2ProductionAfter();
@@ -493,11 +487,13 @@ abstract class BaseDeployer
                 $this->code2ProductionBeforeRollback();
 
                 // restore symbolics links
-                $production_code_dir = $this->getRemoteProductionCodeDir();
-                $rollback_repository_dir = $this->remoteRepositoryDirRollback;
-                $this->atomicRollbackChangeCode2Production($rollback_repository_dir, $production_code_dir);
+                $productionCodeDir = $this->getRemoteProductionCodeDir();
+                $rollbackRepositoryDir = $this->remoteRepositoryDirRollback;
+                $this->atomicRollbackChangeCode2Production($rollbackRepositoryDir, $productionCodeDir);
                 $this->logger->debug('clear cache');
                 $this->runClearCache();
+
+                $this->pushLastDeployTag($rollbackRepositoryDir);
 
                 $this->logger->debug('code2ProductionAfterRollback');
                 $this->code2ProductionAfterRollback();
@@ -749,19 +745,7 @@ abstract class BaseDeployer
             }
         }
 
-
-        // posa tags al repositori
-        $new_repository_dir = $this->getLocalNewRepositoryDir();
-        $this->exec('git --git-dir="' . $new_repository_dir . '/.git" fetch --tags');
-        $this->exec(
-            'git --git-dir="' . $new_repository_dir . '/.git" push --tags origin :refs/tags/' . $this->getTagTargetDeployLast(
-            )
-        );
-        $this->exec('git --git-dir="' . $new_repository_dir . '/.git" tag -f ' . $this->getTagTargetDeployLast());
-        //    $ts = date('Ymd_His');
-        //    $this->exec('git --git-dir="'.$new_repository_dir.'/.git" tag -f ' . $this->environment . '_' . $this->project . '_target_deploy_' . $ts);
-        // push dels tags
-        $this->exec('git --git-dir="' . $new_repository_dir . '/.git" push --tags origin ' . $this->checkoutBranch);
+//        $this->pushLastDeployTag();
     }
 
     protected function sendMailRollback()
@@ -796,25 +780,24 @@ abstract class BaseDeployer
 
     protected function getGitDiffsCommitMessages()
     {
-        $new_repository_dir = $this->getLocalNewRepositoryDir();
-        exec('git --git-dir="' . $new_repository_dir . '/.git" log ' . $this->getTagTargetDeployLast() . '..HEAD', $r);
+        $newRepositoryDir = $this->getLocalNewRepositoryDir();
+        exec('git --git-dir="' . $newRepositoryDir . '/.git" log ' . $this->getTargetDeployLastTag() . '..HEAD', $r);
 
         return $r;
     }
 
     protected function getGitDiffsFiles()
     {
-        $new_repository_dir = $this->getLocalNewRepositoryDir();
-        $exec = 'git --git-dir="' . $new_repository_dir . '/.git" diff --name-only ' . $this->getTagTargetDeployLast(
-            ) . ' HEAD';
+        $newRepositoryDir = $this->getLocalNewRepositoryDir();
+        $exec = 'git --git-dir="' . $newRepositoryDir . '/.git" diff --name-only ' . $this->getTargetDeployLastTag() . ' HEAD';
         exec($exec, $r);
 
         return $r;
     }
 
-    protected function getTagTargetDeployLast()
+    protected function getTargetDeployLastTag()
     {
-        return $this->environment . '_' . $this->project . '_' . $this->id . '_target_deploy_last';
+        return 'deployer_last_' . $this->environment . '_' . $this->project . '_' . $this->id;
     }
 
     protected function formatSummaryMessages($data)
@@ -874,7 +857,7 @@ abstract class BaseDeployer
         return $r;
     }
 
-    public function sendWarningNDaysDeploy($option_send_warning_n_days_deploy)
+    public function sendWarningNDaysDeploy($optionSendWarningNDaysDeploy)
     {
         // check
         $status = $this->getStatus();
@@ -882,7 +865,7 @@ abstract class BaseDeployer
         list($date) = explode('_', $current_version);
         $date = new \DateTime($date);
         $interval = $date->diff(new \DateTime('now'));
-        if ($interval->format('%a') >= $option_send_warning_n_days_deploy) // send warning
+        if ($interval->format('%a') >= $optionSendWarningNDaysDeploy) // send warning
         {
             $body_html = "<html>\n";
             $body_html .= "<body>\n";
@@ -947,27 +930,76 @@ abstract class BaseDeployer
     }
 
     /**
-     * @param $new_repository_dir
-     * @param $production_code_dir
+     * @param $newRepositoryDir
+     * @param $productionCodeDir
      */
-    protected function atomicChangeOfCode2Production($new_repository_dir, $production_code_dir)
+    protected function atomicChangeOfCode2Production($newRepositoryDir, $productionCodeDir)
     {
         $this->logger->debug('create symbolic link');
         $sudo = '';
         if ($this->sudo) $sudo = 'sudo ';
-        $this->execRemoteServers($sudo . 'ln -sfn ' . $new_repository_dir . ' ' . $production_code_dir);
+        $this->execRemoteServers($sudo . 'ln -sfn ' . $newRepositoryDir . ' ' . $productionCodeDir);
     }
 
     /**
-     * @param $rollback_repository_dir
-     * @param $production_code_dir
+     * @param $rollbackRepositoryDir
+     * @param $productionCodeDir
      */
-    protected function atomicRollbackChangeCode2Production($rollback_repository_dir, $production_code_dir)
+    protected function atomicRollbackChangeCode2Production($rollbackRepositoryDir, $productionCodeDir)
     {
         $this->logger->debug('restore symbolic link');
         $sudo = '';
         if ($this->sudo) $sudo = 'sudo ';
-        $this->execRemoteServers($sudo . 'ln -sfn ' . $rollback_repository_dir . ' ' . $production_code_dir);
+        $this->execRemoteServers($sudo . 'ln -sfn ' . $rollbackRepositoryDir . ' ' . $productionCodeDir);
     }
 
+    /**
+     * Push tag that set last deploy point to the origin repository in order to know which is the last commit deployed
+     */
+    protected function pushLastDeployTag($newRepositoryDir = null)
+    {
+        // Add tag
+        if(is_null($newRepositoryDir)) $newRepositoryDir = $this->getLocalNewRepositoryDir();
+        $headHash = $this->getHeadHash();
+        $this->exec('git --git-dir="' . $newRepositoryDir . '/.git" fetch --tags');
+        $this->exec('git --git-dir="' . $newRepositoryDir . '/.git" tag -f "' . $this->getTargetDeployLastTag() . '" ' . $headHash);
+
+        // Delete tag
+        $this->exec('git --git-dir="' . $newRepositoryDir . '/.git" push --tags origin :refs/tags/' . $this->getTargetDeployLastTag());
+        // Push to origin
+        $this->exec('git --git-dir="' . $newRepositoryDir . '/.git" push --tags origin ' . $this->checkoutBranch);
+    }
+
+    protected function getHeadHash($repositoryDir = null)
+    {
+        $this->logger->debug(__METHOD__);
+
+        // Check if repositoryDir exists
+        if(!file_exists($repositoryDir . '/.git')) return 'HEAD';
+
+        if(is_null($repositoryDir)) $repositoryDir = $this->getLocalNewRepositoryDir();
+        $hash = $this->exec('git --git-dir="' . $repositoryDir . '/.git" rev-parse HEAD');
+
+        return $hash;
+    }
+
+    /**
+     * Get git from-to hash between two repositories
+     * @return array($gitHashFrom, $gitHashTo)
+     */
+    protected function getHashFromCurrentCodeToNewRepository()
+    {
+        $repoDirFrom = $this->getLocalCurrentCodeDir();
+        $repoDirTo = $this->getLocalNewRepositoryDir();
+
+        return $this->getHashFromTo($repoDirFrom, $repoDirTo);
+    }
+
+    protected function getHashFromTo($repoDirFrom, $repoDirTo)
+    {
+        $gitHashFrom = $this->getHeadHash($repoDirFrom);
+        $gitHashTo = $this->getHeadHash($repoDirTo);
+
+        return array($gitHashFrom, $gitHashTo);
+    }
 }

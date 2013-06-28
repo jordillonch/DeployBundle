@@ -55,7 +55,7 @@ class DeployersCompilerPass implements CompilerPassInterface
         }
 
         // Deployer engine
-        $engine = new Definition('JordiLlonch\Bundle\DeployBundle\Library\Engine', array($zoneManagerDefinition, $generalConfig['dry_mode']));
+        $engine = new Definition('JordiLlonch\Bundle\DeployBundle\Library\Engine', array($zoneManagerDefinition));
 
         // service that developers will use
         $container->setDefinition('jordi_llonch_deploy.engine', $engine);

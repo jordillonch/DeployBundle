@@ -8,7 +8,7 @@ use Psr\Log\LoggerInterface;
 class Engine
 {
     protected $zoneManager;
-    protected $dryMode;
+    protected $dryMode = false;
 
     /**
      * @var OutputInterface
@@ -24,9 +24,16 @@ class Engine
      * @param ZoneManager $zoneManager
      * @param $dryMode
      */
-    public function __construct(ZoneManager $zoneManager, $dryMode)
+    public function __construct(ZoneManager $zoneManager)
     {
         $this->zoneManager = $zoneManager;
+    }
+
+    /**
+     * @param boolean $dryMode
+     */
+    public function setDryMode($dryMode)
+    {
         $this->dryMode = $dryMode;
     }
 
@@ -71,6 +78,16 @@ class Engine
         // Zones
         $lambdaRollback = function($a, $b) {};
         $this->call('setLogger', array($logger), $lambdaRollback, true);
+    }
+
+   /**
+     * Get status
+     */
+    public function getStatus()
+    {
+        // Zones
+        $lambdaRollback = function($a, $b) {};
+        return $this->call('getStatus', array(), $lambdaRollback, true);
     }
 
 //    protected function getDataDir()

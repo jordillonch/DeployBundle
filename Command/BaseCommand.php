@@ -15,6 +15,8 @@ abstract class BaseCommand extends ContainerAwareCommand
     protected function configure()
     {
         $this->addOption('zones', null, InputOption::VALUE_OPTIONAL, 'Zones to execute command. It must exists in jordi_llonch_deploy.zones config.');
+
+        // TODO: dry mode
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
@@ -23,6 +25,8 @@ abstract class BaseCommand extends ContainerAwareCommand
         $this->deployer = $this->getContainer()->get('jordi_llonch_deploy.engine');
         $this->deployer->setOutput($output);
         $this->deployer->setLogger($this->getContainer()->get('logger'));
+        // TODO: dry mode
+        //$this->deployer->setDryMode(...);
 
         // Selected zones
         $optionZones = $input->getOption('zones');
