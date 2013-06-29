@@ -42,9 +42,8 @@ Configure sshd to accept PubkeyAuthentication
 
 ## TODO
 
-- Configurator
 - Tests
-- Helpers (cache warmer, composer update...)
+- Helpers (cache warmer, composer update, github diffs url...)
 - Ssh with Process component
 - Verbose mode
 

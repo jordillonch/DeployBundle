@@ -29,7 +29,7 @@ abstract class BaseDeployer
     protected $output;
     protected $sudo = false;
     protected $numOldVersionsToCopy = 3;
-    protected $config;
+    protected $custom;
 
     /**
      * @var LoggerInterface
@@ -97,7 +97,7 @@ abstract class BaseDeployer
         if (!empty($config['sudo'])) $this->sudo = $config['sudo'];
 
         // Save config. Useful for custom configs
-        $this->config = $config;
+        $this->custom = $config['custom'];
 
         // get current version, running version
         $current_version_data_file = $this->getLocalDataCurrentVersionFile();
