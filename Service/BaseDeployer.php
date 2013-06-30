@@ -1,6 +1,6 @@
 <?php
 
-namespace JordiLlonch\Bundle\DeployBundle\Library;
+namespace JordiLlonch\Bundle\DeployBundle\Service;
 
 use Symfony\Component\Console\Output\OutputInterface;
 use Psr\Log\LoggerInterface;
@@ -152,9 +152,6 @@ abstract class BaseDeployer
         $this->execRemoteServers($sudo . 'chmod a+wrx "' . $this->getRemoteCodeDir() . '"');
         $this->execRemoteServers($sudo . 'chmod a+wrx "' . $this->getRemoteSharedDir() . '"');
         $this->execRemoteServers($sudo . 'chmod a+wrx "' . $this->getRemoteBinDir() . '"');
-
-        // copy clear cache script to servers
-        $this->clearCacheCode2Servers();
     }
 
     abstract public function downloadCode();
@@ -344,17 +341,6 @@ abstract class BaseDeployer
             $directoryToCopy = $directoryList[$i];
             // Copy code
             $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsync_params . ' "' . $directoryToCopy . '" "' . $host . ':' . $code_dir . '"');
-        }
-    }
-
-    public function clearCacheCode2Servers()
-    {
-        $bin_dir = $this->getRemoteBinDir();
-        foreach ($this->urls as $server) {
-            list($host, $port) = $this->extractHostPort($server);
-            if ($host != 'localhost') $this->exec(
-                'rsync -ar -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" "' . __DIR__ . '/Tools/Cache/clearCache.php" "' . $host . ':' . $bin_dir . '"'
-            );
         }
     }
 

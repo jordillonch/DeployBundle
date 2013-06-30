@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\Output;
-use JordiLlonch\Bundle\DeployBundle\Library\Configure;
+use JordiLlonch\Bundle\DeployBundle\Service\Configure;
 
 class ConfigureCommand extends BaseCommand
 {

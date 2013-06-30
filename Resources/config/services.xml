@@ -5,7 +5,6 @@
     xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <!--<service id="jordillonch_deployer.engine" class="JordiLlonch\Bundle\DeployBundle\Library\Engine" />-->
-        <service id="jordillonch_deployer.configure" class="JordiLlonch\Bundle\DeployBundle\Library\Configure" />
+        <service id="jordillonch_deployer.configure" class="JordiLlonch\Bundle\DeployBundle\Service\Configure" />
     </services>
 </container>

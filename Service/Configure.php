@@ -4,14 +4,14 @@
  * @date 23/05/13 15:16
  */
 
-namespace JordiLlonch\Bundle\DeployBundle\Library;
+namespace JordiLlonch\Bundle\DeployBundle\Service;
 
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class Configure
- * @package JordiLlonch\Bundle\DeployBundle\Library
+ * @package JordiLlonch\Bundle\DeployBundle\Service
  */
 class Configure
 {

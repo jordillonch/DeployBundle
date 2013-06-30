@@ -1,6 +1,6 @@
 <?php
 
-namespace JordiLlonch\Bundle\DeployBundle\Library;
+namespace JordiLlonch\Bundle\DeployBundle\Service;
 
 use Symfony\Component\Console\Output\OutputInterface;
 use Psr\Log\LoggerInterface;

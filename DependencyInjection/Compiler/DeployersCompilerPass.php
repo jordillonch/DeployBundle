@@ -42,7 +42,7 @@ class DeployersCompilerPass implements CompilerPassInterface
     {
         $this->processTaggedDeployers($container);
 
-        $zoneManagerDefinition = new Definition('JordiLlonch\Bundle\DeployBundle\Library\ZoneManager');
+        $zoneManagerDefinition = new Definition('JordiLlonch\Bundle\DeployBundle\Service\ZoneManager');
         foreach ($zonesConfig as $name => $zoneConfig) {
             // Add zone
             $pluginId = $this->getDeployer($zoneConfig['deployer']);
@@ -55,14 +55,14 @@ class DeployersCompilerPass implements CompilerPassInterface
         }
 
         // Deployer engine
-        $engine = new Definition('JordiLlonch\Bundle\DeployBundle\Library\Engine', array($zoneManagerDefinition));
+        $engine = new Definition('JordiLlonch\Bundle\DeployBundle\Service\Engine', array($zoneManagerDefinition));
 
         // service that developers will use
         $container->setDefinition('jordi_llonch_deploy.engine', $engine);
 
 
         // TODO why is not using services.xml?
-        $configure = new Definition('JordiLlonch\Bundle\DeployBundle\Library\Configure', array());
+        $configure = new Definition('JordiLlonch\Bundle\DeployBundle\Service\Configure', array());
         $container->setDefinition('jordi_llonch_deploy.configure', $configure);
     }
 
