@@ -58,12 +58,7 @@ class DeployersCompilerPass implements CompilerPassInterface
         $engine = new Definition('JordiLlonch\Bundle\DeployBundle\Service\Engine', array($zoneManagerDefinition));
 
         // service that developers will use
-        $container->setDefinition('jordi_llonch_deploy.engine', $engine);
-
-
-        // TODO why is not using services.xml?
-        $configure = new Definition('JordiLlonch\Bundle\DeployBundle\Service\Configure', array());
-        $container->setDefinition('jordi_llonch_deploy.configure', $configure);
+        $container->setDefinition('jordillonch_deployer.engine', $engine);
     }
 
     /**

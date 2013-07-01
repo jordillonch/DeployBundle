@@ -180,4 +180,9 @@ class Engine
             $this->logger->crit($e->getMessage());
         }
     }
+
+    public function getZonesNames()
+    {
+        return $this->zoneManager->getZonesNames();
+    }
 }

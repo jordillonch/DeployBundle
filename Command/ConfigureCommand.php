@@ -30,7 +30,7 @@ EOT
 
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
-        $configure = $this->getContainer()->get('jordi_llonch_deploy.configure');
+        $configure = $this->getContainer()->get('jordillonch_deployer.configure');
         $rootDir = $this->getContainer()->get('kernel')->getRootDir();
         $configure->readParametersFile($rootDir . '/config/parameters.yml');
 

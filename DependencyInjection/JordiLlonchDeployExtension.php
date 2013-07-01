@@ -21,6 +21,8 @@ class JordiLlonchDeployExtension extends Extension
     {
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
+        $container->setParameter('jordi_llonch_deploy.config', $config['config']);
+        $container->setParameter('jordi_llonch_deploy.zones', $config['zones']);
 
 
         $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));

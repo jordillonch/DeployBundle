@@ -22,7 +22,7 @@ abstract class BaseCommand extends ContainerAwareCommand
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         // Init deployer engine
-        $this->deployer = $this->getContainer()->get('jordi_llonch_deploy.engine');
+        $this->deployer = $this->getContainer()->get('jordillonch_deployer.engine');
         $this->deployer->setOutput($output);
         $this->deployer->setLogger($this->getContainer()->get('logger'));
         // TODO: dry mode

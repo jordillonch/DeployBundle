@@ -17,6 +17,7 @@ class Configure
 {
     protected $path;
     protected $parameters;
+    protected $parametersInit;
     protected $zones;
 
     const OUTPUT_YML = 0;
@@ -30,6 +31,7 @@ class Configure
         $this->path = $path;
         $yml = file_get_contents($this->path);
         $this->parameters = Yaml::parse($yml);
+        $this->parametersInit = $this->parameters;
         $this->zones = $this->parameters['parameters']['jordi_llonch_deploy.zones'];
     }
 
@@ -39,6 +41,10 @@ class Configure
     public function writeParametersFile()
     {
         $this->parameters['parameters']['jordi_llonch_deploy.zones'] = $this->zones;
+
+        // Only write if are modifications
+        if($this->parameters == $this->parametersInit) return;
+
         $yml = Yaml::dump($this->parameters, 5);
         file_put_contents($this->path, $yml);
     }
