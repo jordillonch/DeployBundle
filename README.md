@@ -49,3 +49,12 @@ Configure sshd to accept PubkeyAuthentication
 - Ssh with Process component
 - Verbose mode
 
+
+## Author
+
+Jordi Llonch - llonch.jordi at gmail dot com
+
+
+## License
+
+JordiLlonchDeployBundle is licensed under the MIT License. See the LICENSE file for full details.
