@@ -2,6 +2,8 @@
 
 WIP
 
+[![Build Status](https://secure.travis-ci.org/jordillonch/JordiLlonchDeployBundle.png?branch=master)](http://travis-ci.org/jordillonch/JordiLlonchDeployBundle)
+
 
 ## Installation
 
