@@ -72,8 +72,6 @@ abstract class BaseDeployer
         // Check required parameters
         if (empty($config['project'])) throw new \Exception('Project name not defined in project config parameter.');
         if (empty($config['environment'])) throw new \Exception('Environment not defined in environment config parameter.');
-        if (empty($config['mail_from'])) throw new \Exception('Mail from not defined in mail_from config parameter.');
-        if (empty($config['mail_to'])) throw new \Exception('Mail to array not defined in mail_to config parameter.');
         if (empty($config['urls'])) throw new \Exception('Urls array not defined in urls config parameter.');
         if (empty($config['local_repository_dir'])) throw new \Exception('Local repository not defined in local_repository_dir config parameter.');
         if (empty($config['checkout_url'])) throw new \Exception('Checkout url not defined in default_checkout_url or zone checkout_url config parameter.');

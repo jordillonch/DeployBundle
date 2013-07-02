@@ -55,7 +55,6 @@ class Configuration implements ConfigurationInterface
                             ->scalarNode('mail_from')
                             ->end()
                             ->arrayNode('mail_to')
-                                ->requiresAtLeastOneElement()
                                 ->useAttributeAsKey('name')
                                 ->prototype('scalar')
                                 ->end()
