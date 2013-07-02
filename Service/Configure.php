@@ -1,7 +1,12 @@
 <?php
+
 /**
- * @author Jordi Llonch <llonch.jordi@gmail.com>
- * @date 23/05/13 15:16
+ * This file is part of the JordiLlonchDeployBundle
+ *
+ * (c) Jordi Llonch <llonch.jordi@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace JordiLlonch\Bundle\DeployBundle\Service;

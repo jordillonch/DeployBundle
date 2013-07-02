@@ -1,7 +1,12 @@
 <?php
+
 /**
- * @author Jordi Llonch <llonch.jordi@gmail.com>
- * @date 01/07/13 20:31
+ * This file is part of the JordiLlonchDeployBundle
+ *
+ * (c) Jordi Llonch <llonch.jordi@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace JordiLlonch\Bundle\DeployBundle\Tests\Fixtures\Fakes;
