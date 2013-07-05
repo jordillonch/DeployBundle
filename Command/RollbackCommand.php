@@ -23,6 +23,9 @@ class RollbackCommand extends BaseCommand
     {
         parent::configure();
 
+        $this->addArgument('action', InputArgument::REQUIRED, 'Action: list, execute');
+        $this->addArgument('version', InputArgument::OPTIONAL, 'Version to rollback');
+
         $this
             ->setName('deployer:rollback')
             ->setDescription('Rollback code that it is on production environment with a previous version on configured servers.')
@@ -34,16 +37,44 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if($input->isInteractive()) {
-            $dialog = $this->getHelperSet()->get('dialog');
-            $confirmation = $dialog->askConfirmation($output, '<question>WARNING! You are about to execute a rollback. Are you sure you wish to continue? (y/n)</question>', false);
-        }
-        else $confirmation = true;
+        $action = $input->getArgument('action');
+        switch($action)
+        {
+            case 'list' :
+                $this->deployer->setSilent(true);
+                $list = $this->deployer->getRollbackList();
+                foreach ($list as $zoneName => $zone) {
+                    $versions = array();
+                    foreach ($zone as $id => $item) $versions[] = array($id, $item['date']->format('Y/m/d H:i:s'), $item['hash_small']);
 
-        if ($confirmation === true) {
-            $this->deployer->runRollback();
-        } else {
-            $output->writeln('<error>Rollback cancelled!</error>');
+                    $table = $this->getHelperSet()->get('table');
+                    $table->setHeaders(array('Version (use this on deployer:rollback execute)', 'Date', 'Short hash'));
+                    $table->setRows($versions);
+                    if(count($versions))
+                    {
+                        $output->writeln('<info>[' . $zoneName . ']</info>');
+                        $table->render($output);
+                    }
+                }
+                break;
+            case 'execute' :
+                $version = $input->getArgument('version');
+                if(empty($version)) throw new \Exception('"version" parameter is required for execute action.');
+
+                if($input->isInteractive()) {
+                    $dialog = $this->getHelperSet()->get('dialog');
+                    $confirmation = $dialog->askConfirmation($output, '<question>WARNING! You are about to execute a rollback. Are you sure you wish to continue? (y/n)</question>', false);
+                }
+                else $confirmation = true;
+
+                if ($confirmation === true) {
+                    $this->deployer->runRollback($version);
+                } else {
+                    $output->writeln('<error>Rollback cancelled!</error>');
+                }
+                break;
+            default :
+                throw new \Exception('Actions must be: list or execute');
         }
     }
 }

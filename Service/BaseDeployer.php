@@ -39,6 +39,8 @@ abstract class BaseDeployer
     protected $sudo = false;
     protected $numOldVersionsToCopy = 3;
     protected $custom;
+    protected $newVersionRollback;
+    protected $currentVersionRollback;
 
     /**
      * @var LoggerInterface
@@ -355,16 +357,16 @@ abstract class BaseDeployer
     {
         $this->logger->debug(__METHOD__ . ': ' . $new_version);
 
-        $this->new_version_rollback = $this->newVersion;
+        $this->newVersionRollback = $this->newVersion;
         $this->newVersion = $new_version;
         file_put_contents($this->getLocalDataNewVersionFile(), $this->newVersion);
     }
 
     public function setNewVersionRollback()
     {
-        if (empty($this->new_version_rollback)) return;
-        $this->logger->debug(__METHOD__ . ': ' . $this->new_version_rollback);
-        $this->newVersion = $this->new_version_rollback;
+        if (empty($this->newVersionRollback)) return;
+        $this->logger->debug(__METHOD__ . ': ' . $this->newVersionRollback);
+        $this->newVersion = $this->newVersionRollback;
         file_put_contents($this->getLocalDataNewVersionFile(), $this->newVersion);
     }
 
@@ -384,34 +386,34 @@ abstract class BaseDeployer
 
     public function setCurrentVersionRollback()
     {
-        $this->logger->debug(__METHOD__ . ': ' . $this->current_version_rollback);
-        $this->currentVersion = $this->current_version_rollback;
+        $this->logger->debug(__METHOD__ . ': ' . $this->currentVersionRollback);
+        $this->currentVersion = $this->currentVersionRollback;
         file_put_contents($this->getLocalDataCurrentVersionFile(), $this->currentVersion);
     }
 
-    public function runDownloadCode($new_version)
+    public function runDownloadCode($newVersion)
     {
         // get last version from remote
         if($this->checkoutProxy)
         {
             $urlParsed = parse_url($this->checkoutUrl);
-            $git_versions = $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" ls-remote origin ' . $this->checkoutBranch);
+            $gitVersions = $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" ls-remote origin ' . $this->checkoutBranch);
         }
-        else $git_versions = $this->exec('git ls-remote "' . $this->checkoutUrl . '" origin ' . $this->checkoutBranch);
+        else $gitVersions = $this->exec('git ls-remote "' . $this->checkoutUrl . '" origin ' . $this->checkoutBranch);
 
-        $git_versions = explode("\n", $git_versions);
-        if (!isset($git_versions[0])) throw new \Exception("Git repository empty.");
-        $git_version = '';
-        foreach ($git_versions as $item) if (\preg_match('/' . $this->checkoutBranch . '/', $item)) $git_version = $item;
-        if (empty($git_version)) throw new \Exception("Git branch " . $this->checkoutBranch . " not found.");
-        $git_version = explode("\t", $git_version);
-        $git_version = $git_version[0];
-        if (empty($git_version)) throw new \Exception("Unable to get last git version.");
-        $new_version .= '_' . $git_version;
+        $gitVersions = explode("\n", $gitVersions);
+        if (!isset($gitVersions[0])) throw new \Exception("Git repository empty.");
+        $gitVersion = '';
+        foreach ($gitVersions as $item) if (\preg_match('/' . $this->checkoutBranch . '/', $item)) $gitVersion = $item;
+        if (empty($gitVersion)) throw new \Exception("Git branch " . $this->checkoutBranch . " not found.");
+        $gitVersion = explode("\t", $gitVersion);
+        $gitVersion = $gitVersion[0];
+        if (empty($gitVersion)) throw new \Exception("Unable to get last git version.");
+        $newVersion .= '_' . $gitVersion;
 
-        $this->logger->debug(__METHOD__ . ': ' . $new_version);
+        $this->logger->debug(__METHOD__ . ': ' . $newVersion);
 
-        $this->setNewVersion($new_version);
+        $this->setNewVersion($newVersion);
         $this->downloadCode();
         //$this->clean();
     }
@@ -425,7 +427,7 @@ abstract class BaseDeployer
     {
         $this->logger->debug(__METHOD__);
         // rollback it is necessary
-        if (empty($this->new_version_rollback)) return;
+        if (empty($this->newVersionRollback)) return;
 
         try {
             $this->downloadCodeRollback();
@@ -442,7 +444,7 @@ abstract class BaseDeployer
     public function runCode2Production($newRepositoryDir = null, $new_version = null)
     {
         $this->logger->debug(__METHOD__);
-        $this->current_version_rollback = $this->currentVersion;
+        $this->currentVersionRollback = $this->currentVersion;
         $this->remoteRepositoryDirRollback = $this->getRemoteCurrentRepositoryDir();
 
         if ($newRepositoryDir == null) $newRepositoryDir = $this->getRemoteNewRepositoryDir();
@@ -471,7 +473,7 @@ abstract class BaseDeployer
     {
         $this->logger->debug(__METHOD__);
         // rollback it is necessary
-        if (empty($this->current_version_rollback)) return;
+        if (empty($this->currentVersionRollback)) return;
 
         try {
             if (!$this->dryMode) {
@@ -504,8 +506,8 @@ abstract class BaseDeployer
 
         if ($this->dryMode) return;
 
-        $r = exec($command, $output, $return_var);
-        if ($r === false || $return_var != 0) throw new \Exception('ERROR executing: ' . $command . "\n" . $r);
+        $r = exec($command, $output, $returnVar);
+        if ($r === false || $returnVar != 0) throw new \Exception('ERROR executing: ' . $command . "\n" . $r);
 
         return $r;
     }
@@ -587,36 +589,48 @@ abstract class BaseDeployer
         $this->cleanBeforeDays = $days;
     }
 
-    public function runRollback()
+    public function runRollback($version)
     {
         $this->logger->debug(__METHOD__);
-        // get directory version list
-        $dir = new \DirectoryIterator($this->getLocalCodeDir());
-        $arr_list_dir = array();
-        foreach ($dir as $fileinfo) {
-            if (!$fileinfo->isDot() && $fileinfo->isDir()) // also check if directory is the current one
-            {
-                $arr_list_dir[$fileinfo->getCTime()] = $fileinfo->__toString();
-            }
-        }
-        ksort($arr_list_dir);
-        // get previous version
-        while (count($arr_list_dir) && array_pop($arr_list_dir) != $this->currentVersion) {
-        }
-        if (count($arr_list_dir) == 0) throw new \Exception('Previous version not found.' . "\n");
-        $new_version = array_pop($arr_list_dir);
-        // do changes
-        $new_version_bak = $this->newVersion;
-        $this->logger->debug('rolling back to version: ' . $new_version);
+
+        // $newVersion exists?
+        $arrListDir = $this->getVersionDirList();
+        if(!in_array($version, $arrListDir)) throw new \Exception($version . ' version not found.' . "\n");
+
+        // Do changes
+        $versionBak = $this->newVersion;
+        $this->logger->debug('rolling back to version: ' . $version);
         $this->rollingBackFromVersion = $this->currentVersion;
-        $this->rollingBackToVersion = $new_version;
+        $this->rollingBackToVersion = $version;
         $this->rollingBack = true;
-        $this->setNewVersion($new_version);
+        $this->setNewVersion($version);
         $this->runCode2Production();
-        $this->setNewVersion($new_version_bak);
+        $this->setNewVersion($versionBak);
         $this->rollingBack = false;
     }
 
+    public function getRollbackList()
+    {
+        $this->logger->debug(__METHOD__);
+        
+        $arrListDir = $this->getVersionDirList();
+        $r = array();
+        foreach($arrListDir as $item) {
+            list($dateRaw, $hourRaw, $hash) = explode('_', $item);
+            $date = new \DateTime();
+            $date->setDate(substr($dateRaw, 0, 4), substr($dateRaw, 4, 2), substr($dateRaw, 6, 2));
+            $date->setTime(substr($hourRaw, 0, 2), substr($hourRaw, 2, 2), substr($hourRaw, 4, 2));
+            $newItem = array(
+                'date' => $date,
+                'hash_small' => substr($hash, 0, 5),
+                'hash' => $hash,
+            );
+            $r[$item] = $newItem;
+        }
+
+        return $r;
+    }
+        
     public function getStatus()
     {
         $r = array(
@@ -628,23 +642,23 @@ abstract class BaseDeployer
         return $r;
     }
 
-    protected function filterText($messages, $to_delete, $extra_lines = null)
+    protected function filterText($messages, $toDelete, $extraLines = null)
     {
-        $line_to_delete = array();
+        $lineToDelete = array();
         foreach ($messages as $i => $line) {
-            foreach ($to_delete as $pattern) {
+            foreach ($toDelete as $pattern) {
                 if (preg_match($pattern, $line)) {
-                    $line_to_delete[] = $i;
-                    if (is_array($extra_lines))
-                        foreach ($extra_lines as $line_number)
-                            $line_to_delete[] = $i + $line_number;
+                    $lineToDelete[] = $i;
+                    if (is_array($extraLines))
+                        foreach ($extraLines as $lineNumber)
+                            $lineToDelete[] = $i + $lineNumber;
                 }
             }
         }
 
         $r = array();
         foreach ($messages as $i => $line)
-            if (!in_array($i, $line_to_delete))
+            if (!in_array($i, $lineToDelete))
                 $r[] = $line;
 
         return $r;
@@ -662,69 +676,69 @@ abstract class BaseDeployer
     protected function sendMailDiffs()
     {
         // git: extreu diffs
-        $git_messages = $this->getGitDiffsCommitMessages();
-        $git_files = $this->getGitDiffsFiles();
+        $gitMessage = $this->getGitDiffsCommitMessages();
+        $gitFiles = $this->getGitDiffsFiles();
 
-        $to_delete = array(
+        $toDelete = array(
             '/push deploy /',
             "/Merge remote\-tracking branch \'origin\/master\' into deploy\-/"
         );
-        $extra_lines = array(-1, -2, -3, -4, 1);
-        $git_messages = $this->filterText($git_messages, $to_delete, $extra_lines);
-        $to_delete = array(
+        $extraLines = array(-1, -2, -3, -4, 1);
+        $gitMessage = $this->filterText($gitMessage, $toDelete, $extraLines);
+        $toDelete = array(
             '/^cache/',
             '/data\/sql\/schema\.sql/'
         );
-        $git_files = $this->filterText($git_files, $to_delete);
-        $git_messages_formated = $this->formatSummaryMessages($git_messages);
-        $git_files_formated = $this->formatDiffFiles($git_files);
+        $gitFiles = $this->filterText($gitFiles, $toDelete);
+        $gitMessagesFormatted = $this->formatSummaryMessages($gitMessage);
+        $gitFilesFormatted = $this->formatDiffFiles($gitFiles);
 
-        $git_config_files = $this->extractConfigs($git_files);
-        $git_migration_files = $this->extractMigrations($git_files);
+        $gitConfigFiles = $this->extractConfigs($gitFiles);
+        $gitMigrationFiles = $this->extractMigrations($gitFiles);
 
         // text message
         $body = "DIFFS\n";
         $body .= "=====\n";
         $body .= "Messages:\n";
         $body .= "---------\n";
-        $body .= implode("\n", $git_messages);
+        $body .= implode("\n", $gitMessage);
         $body .= "\n\n";
         $body .= "Diff files:\n";
         $body .= "-----------\n";
-        $body .= implode("\n", $git_files);
+        $body .= implode("\n", $gitFiles);
         $body .= "\n\n";
-        if (count($git_messages) && count($git_files)) echo $body;
+        if (count($gitMessage) && count($gitFiles)) echo $body;
 
         // mail message
-        $body_html = "<html>\n";
-        $body_html .= "<body>\n";
-        $body_html .= "<h1>DIFFS</h1>\n";
-        $body_html .= "<h2>Summary:</h2>\n";
-        $body_html .= "<p>" . implode("", $git_messages_formated) . "</p>";
-        $body_html .= "<br/>\n";
-        if (count($git_config_files)) {
-            $git_config_files_formated = $this->formatDiffFiles($git_config_files);
-            $body_html .= "<h2>Config files:</h2>\n";
-            $body_html .= "<p>" . implode("<br/>\n", $git_config_files_formated) . "</p>";
-            $body_html .= "<br/>\n";
+        $bodyHtml = "<html>\n";
+        $bodyHtml .= "<body>\n";
+        $bodyHtml .= "<h1>DIFFS</h1>\n";
+        $bodyHtml .= "<h2>Summary:</h2>\n";
+        $bodyHtml .= "<p>" . implode("", $gitMessagesFormatted) . "</p>";
+        $bodyHtml .= "<br/>\n";
+        if (count($gitConfigFiles)) {
+            $gitConfigFilesFormatted = $this->formatDiffFiles($gitConfigFiles);
+            $bodyHtml .= "<h2>Config files:</h2>\n";
+            $bodyHtml .= "<p>" . implode("<br/>\n", $gitConfigFilesFormatted) . "</p>";
+            $bodyHtml .= "<br/>\n";
         }
-        if (count($git_migration_files)) {
-            $git_migration_files_formated = $this->formatDiffFiles($git_migration_files);
-            $body_html .= "<h2>Migration files:</h2>\n";
-            $body_html .= "<p>" . implode("<br/>\n", $git_migration_files_formated) . "</p>";
-            $body_html .= "<br/>\n";
+        if (count($gitMigrationFiles)) {
+            $gitMigrationFilesFormatted = $this->formatDiffFiles($gitMigrationFiles);
+            $bodyHtml .= "<h2>Migration files:</h2>\n";
+            $bodyHtml .= "<p>" . implode("<br/>\n", $gitMigrationFilesFormatted) . "</p>";
+            $bodyHtml .= "<br/>\n";
         }
-        $body_html .= "<h2>Diff files:</h2>\n";
-        $body_html .= "<p>" . implode("<br/>\n", $git_files_formated) . "</p>";
-        $body_html .= "<br/>\n";
-        $body_html .= "<h2>Messages:</h2>\n";
-        $body_html .= "<p>" . implode("<br/>\n", $git_messages_formated) . "</p>";
-        $body_html .= "<br/>\n";
-        $body_html .= "</body>\n";
-        $body_html .= "</html>\n\n";
+        $bodyHtml .= "<h2>Diff files:</h2>\n";
+        $bodyHtml .= "<p>" . implode("<br/>\n", $gitFilesFormatted) . "</p>";
+        $bodyHtml .= "<br/>\n";
+        $bodyHtml .= "<h2>Messages:</h2>\n";
+        $bodyHtml .= "<p>" . implode("<br/>\n", $gitMessagesFormatted) . "</p>";
+        $bodyHtml .= "<br/>\n";
+        $bodyHtml .= "</body>\n";
+        $bodyHtml .= "</html>\n\n";
 
         // envia mail
-        if (count($git_messages) && count($git_files)) {
+        if (count($gitMessage) && count($gitFiles)) {
             $mails = $this->mailTo;
             foreach ($mails as $mail) {
                 $subject = 'Deploy ' . $this->environment . '_' . $this->project . ' - ' . $this->id;
@@ -735,7 +749,7 @@ abstract class BaseDeployer
                 $headers .= 'X-Mailer: PHP/' . phpversion();
 
                 $to = $mail;
-                $r = mail($to, $subject, $body_html, $headers);
+                $r = mail($to, $subject, $bodyHtml, $headers);
                 if (!$r) echo 'MAIL NOT SENT.' . "\n";
             }
         }
@@ -745,18 +759,18 @@ abstract class BaseDeployer
 
     protected function sendMailRollback()
     {
-        $version_from = $this->rollingBackFromVersion;
-        $version_to = $this->rollingBackToVersion;
+        $versionFrom = $this->rollingBackFromVersion;
+        $versionTo = $this->rollingBackToVersion;
 
-        $body_html = "<html>\n";
-        $body_html .= "<body>\n";
-        $body_html .= "<h1>ROLLBACK</h1>\n";
-        $body_html .= '<table border="0" padding="1">';
-        $body_html .= "<tr><td>From version:</td><td>$version_from</td></tr>";
-        $body_html .= "<tr><td>To version:</td><td>$version_to</td></tr>";
-        $body_html .= "<table/>\n";
-        $body_html .= "</body>\n";
-        $body_html .= "</html>\n\n";
+        $bodyHtml = "<html>\n";
+        $bodyHtml .= "<body>\n";
+        $bodyHtml .= "<h1>ROLLBACK</h1>\n";
+        $bodyHtml .= '<table border="0" padding="1">';
+        $bodyHtml .= "<tr><td>From version:</td><td>$versionFrom</td></tr>";
+        $bodyHtml .= "<tr><td>To version:</td><td>$versionTo</td></tr>";
+        $bodyHtml .= "<table/>\n";
+        $bodyHtml .= "</body>\n";
+        $bodyHtml .= "</html>\n\n";
 
         $mails = $this->mailTo;
         foreach ($mails as $mail) {
@@ -768,7 +782,7 @@ abstract class BaseDeployer
             $headers .= 'X-Mailer: PHP/' . phpversion();
 
             $to = $mail;
-            $r = mail($to, $subject, $body_html, $headers);
+            $r = mail($to, $subject, $bodyHtml, $headers);
             if (!$r) echo 'MAIL NOT SENT.' . "\n";
         }
     }
@@ -862,14 +876,14 @@ abstract class BaseDeployer
         $interval = $date->diff(new \DateTime('now'));
         if ($interval->format('%a') >= $optionSendWarningNDaysDeploy) // send warning
         {
-            $body_html = "<html>\n";
-            $body_html .= "<body>\n";
-            $body_html .= "<h1>OLD DEPLOY [{$this->id}]</h1>\n";
-            $body_html .= '<table border="0" padding="1">';
-            $body_html .= "<tr><td>Current version:</td><td>$current_version</td></tr>";
-            $body_html .= "<table/>\n";
-            $body_html .= "</body>\n";
-            $body_html .= "</html>\n\n";
+            $bodyHtml = "<html>\n";
+            $bodyHtml .= "<body>\n";
+            $bodyHtml .= "<h1>OLD DEPLOY [{$this->id}]</h1>\n";
+            $bodyHtml .= '<table border="0" padding="1">';
+            $bodyHtml .= "<tr><td>Current version:</td><td>$current_version</td></tr>";
+            $bodyHtml .= "<table/>\n";
+            $bodyHtml .= "</body>\n";
+            $bodyHtml .= "</html>\n\n";
 
             $mails = $this->mailTo;
             foreach ($mails as $mail) {
@@ -880,7 +894,7 @@ abstract class BaseDeployer
                 $headers .= 'Reply-To: ' . $this->mailFrom . "\r\n";
                 $headers .= 'X-Mailer: PHP/' . phpversion();
                 $to = $mail;
-                $r = mail($to, $subject, $body_html, $headers);
+                $r = mail($to, $subject, $bodyHtml, $headers);
                 if (!$r) echo 'MAIL NOT SENT.' . "\n";
             }
         }
@@ -951,6 +965,7 @@ abstract class BaseDeployer
      */
     protected function pushLastDeployTag($newRepositoryDir = null)
     {
+return;
         // Add tag
         if(is_null($newRepositoryDir)) $newRepositoryDir = $this->getLocalNewRepositoryDir();
         $headHash = $this->getHeadHash();
@@ -994,5 +1009,33 @@ abstract class BaseDeployer
         $gitHashTo = $this->getHeadHash($repoDirTo);
 
         return array($gitHashFrom, $gitHashTo);
+    }
+
+    /**
+     * List of current downloaded versions of code
+     * First last available version (without current)
+     *
+     * @return array
+     */
+    protected function getVersionDirList()
+    {
+        // Get directory version list
+        $dir = new \DirectoryIterator($this->getLocalCodeDir());
+        $arrListDir = array();
+        foreach ($dir as $fileinfo) {
+            if (!$fileinfo->isDot() && $fileinfo->isDir()) // also check if directory is the current one
+            {
+                $arrListDir[$fileinfo->getCTime()] = $fileinfo->__toString();
+            }
+        }
+
+        // Remove current version
+        $currentVersion = $this->currentVersion;
+        $arrListDir = array_filter($arrListDir, function($item) use($currentVersion) { return $item != $currentVersion; });
+
+        krsort($arrListDir);
+        $arrListDir = array_values($arrListDir);
+
+        return $arrListDir;
     }
 }

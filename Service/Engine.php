@@ -18,6 +18,7 @@ class Engine
 {
     protected $zoneManager;
     protected $dryMode = false;
+    protected $silent = null;
 
     /**
      * @var OutputInterface
@@ -44,6 +45,14 @@ class Engine
     public function setDryMode($dryMode)
     {
         $this->dryMode = $dryMode;
+    }
+
+    /**
+     * @param boolean $silent
+     */
+    public function setSilent($silent)
+    {
+        $this->silent = $silent;
     }
 
     /**
@@ -158,8 +167,12 @@ class Engine
      * @param bool $silent
      * @return array
      */
-    protected function call($name, $arguments, $lambdaRollback, $silent=false)
+    protected function call($name, $arguments, $lambdaRollback, $silent=null)
     {
+        // Silent
+        if(!is_null($this->silent)) $silent = $this->silent;
+        if(is_null($silent)) $silent = false;
+
         try
         {
             $response = array();
