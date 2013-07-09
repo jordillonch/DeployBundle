@@ -260,6 +260,7 @@ abstract class BaseDeployer
         // Update repo if it is a proxy of a remote repo
         if ($this->checkoutProxy) {
             $urlParsed = parse_url($this->checkoutUrl);
+            $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" --work-tree="' . $urlParsed['path'] . '" reset --hard HEAD');
             $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" --work-tree="' . $urlParsed['path'] . '" pull');
         }
 
