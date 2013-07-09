@@ -10,10 +10,10 @@ This bundle aims to be a deploy system for your projects.
 
 It is a Symfony2 Bundle but it can be used to deploy several kind of projects.
 
-The bundle provides some commands to automatize deploy process. Here main commands:
+The bundle provides some commands to automatize deploy process. Here are main commands:
 
 * **Initialize**: Prepare deployer and remote servers creating a directories structure to host new code.
-* **Download**: Download code from repository, adapt, warn up… and send to remote servers in order to put new code to production.
+* **Download**: Download code from repository, adapt, warn up… and ship it to remote servers in order to put new code to production.
 * **Code to production**. Deploy new code to production atomically and reload web server, app…
 * **Rollback**. Return back to previous deployed version.
 
@@ -21,7 +21,7 @@ Deployer have zones configured to deploy new code.
 
 Zones are a project and environment (e.g. prod_api, our project Api for the production environment).
 
-Deployer use GitHub repository, a configured branch, and HEAD as a target to deploy.
+Deployer uses GitHub repository, a configured branch, and HEAD as a target to deploy.
 
 
 You can use this bundle adding it to your projects via composer (see installation section) but my recommendation is that you create a new project to deploy because you may be want to not have your production configurations in your repository project. So it is a good idea to delegate add productions configuration to the deploy system.
@@ -34,7 +34,7 @@ There are two basic ideas that allows to deploy several code versions and put on
 
 When you want to deploy new code you have to do a "*download*" operation. That operation clones code from your git repository to a new directory (e.g. 20130704_180131_a618a56b08549794ec4c9d5db29058a01a58977f) then do adaptations to the code. Adaptations are the step where configurations are added, app cache is warned up, dependencies are downloaded and installed, symlinks are created to shared directories… 
 
-Shared directories are directories where are data that you want to keep between deploys. (e.g. logs, reports, generated images...)
+Shared directories are directories where there are data that you want to keep between deploys. (e.g. logs, reports, generated images...)
 
 After that, code is copied to configured servers. Ssh authorized keys are used to allow copy and execute commands to remote servers.
 
@@ -135,7 +135,8 @@ class Test extends BaseDeployer
 
         $this->logger->debug('Adapting code');
         $this->output->writeln('<info>Adapting code...</info>');
-        // here you can download vendors, add productions configuration, do cache warm up, set shared directories...
+        // Here you can download vendors, add productions configuration, 
+        // do cache warm up, set shared directories...
 
         $this->logger->debug('Copying code to zones...');
         $this->output->writeln('<info>Copying code to zones...</info>');
@@ -200,7 +201,7 @@ app/console deployer:code2production --zones=prod_myproj
 
 ### Rollback
 
-If there is a problem and you need to go back to a previous version you have to do 2 steps:
+If there is any problem and you need to roll back to a previous version you must to do 2 steps:
 
 1) Ask deploy for available versions to rollback.
 
