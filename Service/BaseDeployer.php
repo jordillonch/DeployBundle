@@ -507,10 +507,12 @@ abstract class BaseDeployer
 
         if ($this->dryMode) return;
 
-        $r = exec($command, $output, $returnVar);
-        if ($r === false || $returnVar != 0) throw new \Exception('ERROR executing: ' . $command . "\n" . $r);
+        $outputLastLine = exec($command, $output, $returnVar);
+        if ($returnVar != 0) throw new \Exception('ERROR executing: ' . $command . "\n" . implode("\n", $output));
 
-        return $r;
+        if(!empty($output)) foreach($output as $item) $this->logger->debug('exec output: ' . $item);
+
+        return $outputLastLine;
     }
 
     protected function execRemote(array $servers, $command)
