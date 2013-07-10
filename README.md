@@ -116,9 +116,10 @@ php app/console generate:bundle --namespace=MyProj/DeployBundle --dir=src --no-i
 
 * Create your own class to deploy:
 
-```
-src/MyProj/DeployBundle/Service/Test.php:
+`src/MyProj/DeployBundle/Service/Test.php:`
 
+
+```
 <?php
 
 namespace MyProj/DeployBundle/Service;
@@ -221,22 +222,207 @@ app/console deployer:rollback execute [version] --zones=prod_myproj
 
 ### initialize
 
+Prepare deployer and remote servers creating a directories structure to host new code.
+
+```
+app/console deployer:initialize --zones=[zone1,zone2...]
+```
+
+
 ### download
+
+Download code from repository, adapt, warn up… and ship it to remote servers in order to put new code to production.
+
+```
+app/console deployer:download --zones=[zone1,zone2...]
+```
 
 ### code2production
 
+Deploy new code to production atomically and reload web server, app...
+
+```
+app/console deployer:code2production --zones=[zone1,zone2...]
+```
+
+
 ### rollback
+
+Return back to previous deployed version.
+
+
+1) Available versions to rollback.
+
+```
+app/console deployer:rollback list --zones=[zone1]
+```
+
+2) Execute rollback to specific version
+
+```
+app/console deployer:rollback execute [version] --zones=[zone1]
+```
+
 
 ### status
 
+Shows running version and last downloaded version prepared to put to production.
+
+```
+app/console deployer:status [--zones=[zone1,zone2...]]
+```
+
+
 ### configure
 
+Configure remote servers for zones. Useful for automatize scaling.
+
+```
+app/console deployer:configure zone [add, set, rm, list, list_json] [url]
+```
+
+
 ### clean
+
+Remove code older than configured days. `clean_before_days` parameter is used. Always left 4 previous downloaded versions.
+
+```
+app/console deployer:clean
+```
+
+
+### exec2servers
+
+Executes command passed as argument to all configured servers.
+
+```
+app/console deployer:exec2servers [command]
+```
 
 
 ## Configuration
 
-local_repository_dir
+Deployer configurations are set in `parameters.yml`.
+
+You must set general configurations and zones.
+
+
+### General configuration
+
+```
+jordi_llonch_deploy.config:
+    project: MyProject
+    mail_from: iamrobot@me
+    mail_to:
+        - me@me.com
+    local_repository_dir: /home/deploy/deploy_repository
+    clean_before_days: 7
+    sudo: true
+```
+
+#### project
+
+Your project name.
+
+
+#### mail_from
+
+Mail from.
+
+
+#### mail_to
+
+Mail to send emails about deployments. It is an array.
+
+
+#### local_repository_dir
+
+Directory where deployer clone your repositories, adapt code and save data about versions in the deploy system.
+
+
+#### clean_before_days
+
+Used in the clean command to remove previous downloaded versions. Always left 4 previous downloaded versions.
+
+
+#### sudo
+
+Add `sudo` to all commands send to remote servers. If you want to use, you should set your deploy user to sudoers on all remote servers.
+
+        
+### Zones configuration
+
+You need to set a minimum of one zone. Here is created your zone `prod_myproj`: 
+
+```
+jordi_llonch_deploy.zones:
+    prod_myproj:
+        deployer: myproj
+        environment: prod
+        urls:
+            - deploy@testserver1:8822
+            - deploy@testserver2:8822
+        checkout_url: 'git@github.com:myrepo/myproj.git'
+        checkout_branch: master
+        checkout_proxy: true
+        repository_dir: /var/www/production/myproj/deploy
+        production_dir: /var/www/production/myproj/code
+        custom:
+            my_key1: value1
+            my_key2: value2
+```
+
+#### deployer
+
+Name of the service used to deploy the zone.
+
+```
+<service id="myproj.deployer.test" class="MyProj/DeployBundle/Service/Test">
+    <tag name="jordi_llonch_deploy" deployer="myproj"/>
+</service>
+```
+
+
+#### environment
+
+Environment.
+
+
+#### urls
+
+Remote servers where deployed code will be copied and set to production.
+
+Format is: `[user]@[server]:[port]`
+
+
+#### checkout_url
+
+Url to git repository.
+
+
+#### checkout_branch
+
+Git branch to clone.
+
+
+#### checkout_proxy
+
+Deployer always clone a repository for every deploy. If you want to avoid to download from remote server you can clone your repository locally, then set `checkout_url` to your local local repository (`file:///home/deploy/proxy_repositories/myproj`). Then before download operation, deployer execute a `git pull` to your local repository.
+
+
+#### repository_dir
+
+Path on remote servers where to copy new deployed code.
+
+
+#### production_dir
+
+Path that is updated by deployer when new deployed code is set to production. So you must set this path to your webserver as a root path.
+
+
+#### custom
+
+Custom parameters that can be get in your deploy class.
 
 
 ### Services

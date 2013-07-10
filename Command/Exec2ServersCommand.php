@@ -25,11 +25,11 @@ class Exec2ServersCommand extends BaseCommand
 
        $this
             ->setName('deployer:exec2servers')
-            ->setDescription('Executes command passed as argument on all configured servers.')
+            ->setDescription('Executes command passed as argument to all configured servers.')
             ->addOption('command', null, InputOption::VALUE_REQUIRED, 'Command to execute.')
 //            ->addArgument('command', InputArgument::REQUIRED, 'Command to execute.', null)
             ->setHelp(<<<EOT
-The <info>deployer:exec2servers</info> command Executes command passed as argument on all configured servers.
+The <info>deployer:exec2servers</info> command Executes command passed as argument to all configured servers.
 EOT
         );
     }

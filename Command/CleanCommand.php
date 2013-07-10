@@ -25,10 +25,9 @@ class CleanCommand extends BaseCommand
 
         $this
             ->setName('deployer:clean')
-            ->setDescription('Download code to configured servers.')
+            ->setDescription('Remove code older than configured days. <info>clean_before_days</info> parameter is used.')
             ->setHelp(<<<EOT
-The <info>deployer:download</info> command download code to all configured servers.
-Downloaded code far than 7 days it will be removed.
+The <info>deployer:clean</info> removes code older than configured days.
 EOT
         );
     }
