@@ -62,6 +62,9 @@ class Engine
      */
     public function setSelectedZones(array $selectedZones)
     {
+        // Check if all $selectedZones exist
+        if(count(array_diff($selectedZones, $this->zoneManager->getZonesNames()))) throw new \Exception('Zone does not exists.');
+
         foreach($this->zoneManager->getZonesNames() as $zone)
         {
             if(!in_array($zone, $selectedZones)) $this->zoneManager->removeZone($zone);
