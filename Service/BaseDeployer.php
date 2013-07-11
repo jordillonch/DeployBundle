@@ -596,6 +596,18 @@ abstract class BaseDeployer
     {
         $this->logger->debug(__METHOD__);
 
+        // $version could be a negative integer to step backward or a concrete version
+        if(is_numeric($version)) {
+            $versionStep = $version;
+            $arrListDir = $this->getVersionDirList(false);
+            $keyCurrentVersion = array_search($this->currentVersion, $arrListDir);
+            if($keyCurrentVersion === false) throw new \Exception('Current version is not found in the available versions list.');
+            $versionNum = $keyCurrentVersion + $versionStep;
+            $arrListDirValues = array_values($arrListDir);
+            if(!isset($arrListDirValues[$versionNum])) throw new \Exception('There are only ' . count($arrListDir) . ' available versions to step backward.');
+            $version = $arrListDirValues[$versionNum];
+        }
+
         // $newVersion exists?
         $arrListDir = $this->getVersionDirList();
         if(!in_array($version, $arrListDir)) throw new \Exception($version . ' version not found.' . "\n");
@@ -1020,7 +1032,7 @@ return;
      *
      * @return array
      */
-    protected function getVersionDirList()
+    protected function getVersionDirList($removeCurrentVersion = true)
     {
         // Get directory version list
         $dir = new \DirectoryIterator($this->getLocalCodeDir());
@@ -1033,8 +1045,10 @@ return;
         }
 
         // Remove current version
-        $currentVersion = $this->currentVersion;
-        $arrListDir = array_filter($arrListDir, function($item) use($currentVersion) { return $item != $currentVersion; });
+        if($removeCurrentVersion) {
+            $currentVersion = $this->currentVersion;
+            $arrListDir = array_filter($arrListDir, function($item) use($currentVersion) { return $item != $currentVersion; });
+        }
 
         krsort($arrListDir);
         $arrListDir = array_values($arrListDir);

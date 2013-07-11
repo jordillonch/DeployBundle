@@ -202,19 +202,7 @@ app/console deployer:code2production --zones=prod_myproj
 
 ### Rollback
 
-If there is any problem and you need to roll back to a previous version you must to do 2 steps:
-
-1) Ask deploy for available versions to rollback.
-
-```
-app/console deployer:rollback list --zones=prod_myproj
-```
-
-2) Execute rollback to specific version
-
-```
-app/console deployer:rollback execute [version] --zones=prod_myproj
-```
+If there is any problem you can roll back to a previous version. See rollback command help.
 
 
 
@@ -248,10 +236,21 @@ app/console deployer:code2production --zones=[zone1,zone2...]
 
 ### rollback
 
-Return back to previous deployed version.
+If there is any problem and you need to roll back to a previous version you have two options:
 
 
-1) Available versions to rollback.
+#### Using number of steps to roll back
+
+```
+app/console deployer:rollback execute [steps_backward] --zones=[zone1]
+```
+
+* If you want to roll back to a previous version `steps_backward` should be `1`.
+
+
+#### Referencing to a concrete version
+
+1) Ask deploy for available versions to rollback.
 
 ```
 app/console deployer:rollback list --zones=[zone1]
