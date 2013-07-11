@@ -23,7 +23,7 @@ abstract class BaseCommand extends ContainerAwareCommand
 
     protected function configure()
     {
-        $this->addOption('zones', null, InputOption::VALUE_OPTIONAL, 'Zones to execute command. It must exists in jordi_llonch_deploy.zones config.');
+        $this->addOption('zones', null, InputOption::VALUE_REQUIRED, 'Zones to execute command. It must exists in jordi_llonch_deploy.zones config.');
 
         // TODO: dry mode
     }
@@ -39,6 +39,6 @@ abstract class BaseCommand extends ContainerAwareCommand
 
         // Selected zones
         $optionZones = $input->getOption('zones');
-        if(!empty($optionZones)) $this->deployer->setSelectedZones(explode(",", $optionZones));
+        $this->deployer->setSelectedZones(explode(",", $optionZones));
     }
 }
