@@ -16,6 +16,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use JordiLlonch\Bundle\DeployBundle\Service\DeployerExecute;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 abstract class BaseCommand extends ContainerAwareCommand
 {
@@ -33,7 +35,14 @@ abstract class BaseCommand extends ContainerAwareCommand
         // Init deployer engine
         $this->deployer = $this->getContainer()->get('jordillonch_deployer.engine');
         $this->deployer->setOutput($output);
-        $this->deployer->setLogger($this->getContainer()->get('logger'));
+
+        // Logger
+        $logger = $this->getContainer()->get('logger');
+        if($input->getOption('verbose')) {
+            $logger->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
+        }
+        $this->deployer->setLogger($logger);
+
         // TODO: dry mode
         //$this->deployer->setDryMode(...);
 
