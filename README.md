@@ -424,28 +424,6 @@ Path that is updated by deployer when new deployed code is set to production. So
 Custom parameters that can be get in your deploy class.
 
 
-### Services
-
-
-## Extra
-
-### Proxy
-
-
-### Composer
-
-#### github-oauth
-
-~/.composer/config.json
-
-
-
-## Test
-
-Add testserver1 and testserver2 as 127.0.0.1 as localhost in your /etc/hosts
-Configure sshd to accept PubkeyAuthentication
-
-
 ## TODO
 
 - Verbose mode
