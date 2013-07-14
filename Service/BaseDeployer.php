@@ -39,6 +39,7 @@ abstract class BaseDeployer
     protected $sudo = false;
     protected $numOldVersionsToCopy = 3;
     protected $custom;
+    protected $helper;
     protected $newVersionRollback;
     protected $currentVersionRollback;
 
@@ -78,7 +79,7 @@ abstract class BaseDeployer
         // Merge config
         $this->zonesConfig = $zonesConfig;
         $zoneConfig = $zonesConfig[$this->getZoneName()];
-        $config = \array_merge($generalConfig, $zoneConfig);
+        $config = \array_merge_recursive($generalConfig, $zoneConfig);
 
         // Check required parameters
         if (empty($config['project'])) throw new \Exception('Project name not defined in project config parameter.');
@@ -104,9 +105,10 @@ abstract class BaseDeployer
         if (!empty($config['checkout_proxy'])) $this->checkoutProxy = $config['checkout_proxy'];
         if (!empty($config['clean_before_days'])) $this->cleanBeforeDays = $config['clean_before_days'];
         if (!empty($config['sudo'])) $this->sudo = $config['sudo'];
+        if (!empty($config['helper'])) $this->helper = $config['helper'];
 
         // Save config. Useful for custom configs
-        $this->custom = $config['custom'];
+        if (!empty($config['custom'])) $this->custom = $config['custom'];
 
         // get current version, running version
         $current_version_data_file = $this->getLocalDataCurrentVersionFile();

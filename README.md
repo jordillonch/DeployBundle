@@ -27,6 +27,9 @@ Deployer uses GitHub repository, a configured branch, and HEAD as a target to de
 You can use this bundle adding it to your projects via composer (see installation section) but my recommendation is that you create a new project to deploy because you may be want to not have your production configurations in your repository project. So it is a good idea to delegate add productions configuration to the deploy system.
 
 
+Furthermore this bundle offers **helpers** to automatize common operations like install *composer* dependencies, do a *cache warm up* for *Symfony2* projects, refresh *php-fpm* after put code to production, get url to *GitHub* with diffs of new deployed code...
+
+
 ## How it works?
 
 There are two basic ideas that allows to deploy several code versions and put one of them to production and rollback between them.
@@ -348,6 +351,11 @@ Used in the clean command to remove previous downloaded versions. Always left 4 
 
 Add `sudo` to all commands send to remote servers. If you want to use, you should set your deploy user to sudoers on all remote servers.
 
+
+#### helper
+
+Helper parameters that can be get in your deploy class.
+
         
 ### Zones configuration
 
@@ -424,11 +432,182 @@ Path that is updated by deployer when new deployed code is set to production. So
 Custom parameters that can be get in your deploy class.
 
 
+#### helper
+
+Helper parameters that must be set to use some helpers.
+
+If helper parameters are set in general configuration those configuration are merged here.
+
+
+## Helpers
+
+Hepers automatize common operations like to install *composer* dependencies, to do a *cache warm up* for *Symfony2* projects, to restart *php-fpm* after to put code to production, to get url to *GitHub* with differences of new deployed code...
+
+
+### How use it?
+
+Helpers are `traits` so you only need tu `use` in your inherited class from BaseDeployer. 
+
+Here and example:
+
+`src/MyProj/DeployBundle/Service/Test.php:`
+
+
+```
+<?php
+
+namespace MyProj/DeployBundle/Service;
+
+use JordiLlonch\Bundle\DeployBundle\Service\BaseDeployer;
+use JordiLlonch\Bundle\DeployBundle\Helpers\Composer;
+use JordiLlonch\Bundle\DeployBundle\Helpers\Symfony2;
+use JordiLlonch\Bundle\DeployBundle\Helpers\PhpFpm;
+use JordiLlonch\Bundle\DeployBundle\Helpers\SharedDirs;
+
+class Test extends BaseDeployer
+{
+    use Composer, Symfony2, PhpFpm, SharedDirs;
+
+    public function initialize()
+    {
+        parent::initialize();
+
+        // Shared dirs
+        $this->helperSharedDirInitialize('logs');
+    }
+
+    public function downloadCode()
+    {
+        $this->logger->debug('Downloading code...');
+        $this->output->writeln('<info>Downloading code...</info>');
+        $this->downloadCodeGit();
+
+        $this->logger->debug('Adapting code');
+        $this->output->writeln('<info>Adapting code...</info>');
+
+        // composer
+        $this->helperComposerInstall();
+        $this->helperComposerExecuteInstall();
+
+        // cache warm:up
+        $this->helperSymfony2CacheWarmUp();
+
+        // shared directories
+        $this->helperSharedDirSet('app/logs', 'logs');
+
+        $this->logger->debug('Copying code to zones...');
+        $this->output->writeln('<info>Copying code to zones...</info>');
+        $this->code2Servers();
+    }
+
+    public function downloadCodeRollback()
+    {
+    }
+
+    protected function runClearCache()
+    {
+        $this->logger->debug('Clearing cache...');
+        $this->output->writeln('<info>Clearing cache...</info>');
+        $this->helperPhpFpmRefresh();
+    }
+}
+```
+
+* As you can see we used some methods prefixed by `helper…` to install composer dependencies, doing cache warm up, setting shared directories and restarting php-fpm.
+
+
+### Provided helpers
+
+#### SharedDirs
+
+Easy way to manage shared directories.
+
+`helperSharedDirInitialize($path)`
+
+* Initialize given path in the shared directory.
+
+`helperSharedDirSet($pathInAppToLink, $pathInSharedDir)`
+
+* Set shared directory for a given path in the project that will be removed and replaced by a symlink to given path to shared directory.
+
+
+#### PhpFpm
+
+Provides methods to restart php-fpm gracefully.
+
+`helperPhpFpmRefresh()`
+
+* Refresh php-fpm gracefully but you must configure your webserver (e.g. Nginx) to retry the request.
+
+`helperPhpFpmRefreshCommand()`
+
+* Command used to reload php-fpm
+
+
+#### Composer
+
+Helpers to manage composer installation and some commands.
+
+`helperComposerInstall()`
+
+* Install composer.phar in the new repository dir.
+
+`helperComposerExecuteInstall()`
+
+* Executes composer install in the new repository dir.
+* If environment is dev or test --dev parameter is added to composer install
+* If environment is prod --no-dev parameter is added to composer install
+
+
+#### Symfony2
+
+For now only provides a method to do a cache warm up.
+
+`helperSymfony2CacheWarmUp()`
+
+* Do a cache:warmup for production environment
+
+
+#### GitHub
+
+Useful methods to has feedback of your deploy in GitHub.
+
+`helperGitHubGetCompareUrl($gitUidFrom, $gitUidTo)`
+
+* Give an url comparing two commits
+* You must set your http url to your GitHub repository in jordi_llonch_deploy.zones parameters:
+
+```
+helper:
+    github:
+        url: https://github.com/YourUser/Repository
+```
+
+`helperGitHubGetCompareUrlFromCurrentCodeToNewRepository()`
+
+* Give an url comparing commits between current running code and the new downloaded code.
+
+
+#### HipChat
+
+Provides a method to send messages to a room in a HipChat.
+
+`helperHipChatSend($msg, $color='purple')`
+
+* Send a message to a given room
+* You must set your token and room_id to your HipChat in jordi_llonch_deploy.general parameters:
+
+```
+helper:
+    hipchat:
+        token: your_token
+        room_id: your_room_id
+```
+
+
 ## TODO
 
-- Verbose mode
 - Tests
-- Helpers (cache warmer, composer update, github diffs url...)
 - Ssh with Process component
 - Abstract layer for VCS
 
