@@ -519,13 +519,12 @@ abstract class BaseDeployer
 
     protected function execRemote(array $servers, $command)
     {
-        $command = str_replace('"', '\\"', $command);
         $r = array();
         foreach ($servers as $server) {
             $r[$server] = null;
             list($host, $port) = $this->extractHostPort($server);
             if ($host == 'localhost') $sshCommand = $command;
-            else $sshCommand = 'ssh -t -p ' . $port . ' -o "LogLevel=quiet" -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" ' . $host . ' "' . $command . '"';
+            else $sshCommand = 'ssh -t -p ' . $port . ' -o "LogLevel=quiet" -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" ' . $host . ' "' . str_replace('"', '\\"', $command) . '"';
             if ($this->dryMode) $this->output->writeln($sshCommand);
             else $r[$server] = $this->exec($sshCommand);
         }
