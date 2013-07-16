@@ -351,7 +351,8 @@ abstract class BaseDeployer
         for($i=$c-2; $i>=0 && $i>=$c-1-$numOldVersionsToCopy; $i--) {
             $directoryToCopy = $directoryList[$i];
             // Copy code
-            $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $directoryToCopy . '" "' . $host . ':' . $codeDir . '"');
+            if($host == 'localhost') $this->exec('cp -a "' . $directoryToCopy . '" "' . $codeDir . '"');
+            else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $directoryToCopy . '" "' . $host . ':' . $codeDir . '"');
         }
     }
 
