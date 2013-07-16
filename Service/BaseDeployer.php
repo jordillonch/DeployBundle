@@ -289,23 +289,22 @@ abstract class BaseDeployer
         return array();
     }
 
-    public function code2Servers($rsync_params = '')
+    public function code2Servers($rsyncParams = '')
     {
         $this->logger->debug(__METHOD__);
 
         $newRepositoryDir = $this->getLocalNewRepositoryDir();
-        $code_dir = $this->getRemoteCodeDir();
+        $codeDir = $this->getRemoteCodeDir();
         foreach ($this->urls as $server) {
             try {
                 list($host, $port) = $this->extractHostPort($server);
 
                 // Check if it is a new server to copy some old version in order to be able to rollback
-                if($this->isNewServer($server)) $this->copyOldVersions($server, $this->numOldVersionsToCopy, $rsync_params);
+                if($this->isNewServer($server)) $this->copyOldVersions($server, $this->numOldVersionsToCopy, $rsyncParams);
 
                 // Copy code
-                $this->exec(
-                    'rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsync_params . ' "' . $newRepositoryDir . '" "' . $host . ':' . $code_dir . '"'
-                );
+                if($host == 'localhost') $this->exec('cp -a "' . $newRepositoryDir . '" "' . $codeDir . '"');
+                else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $newRepositoryDir . '" "' . $host . ':' . $codeDir . '"');
             } catch (\Exception $e) {
                 throw $e;
             }
@@ -332,7 +331,7 @@ abstract class BaseDeployer
      * @param $server
      * @param int $numOldVersionsToCopy
      */
-    protected function copyOldVersions($server, $numOldVersionsToCopy = 3, $rsync_params = '')
+    protected function copyOldVersions($server, $numOldVersionsToCopy = 3, $rsyncParams = '')
     {
         $this->logger->debug(__METHOD__);
 
@@ -346,13 +345,13 @@ abstract class BaseDeployer
         foreach ($finder as $file) $directoryList[] = $file->getRealPath();
 
         // Copy N versions to servers
-        $code_dir = $this->getRemoteCodeDir();
+        $codeDir = $this->getRemoteCodeDir();
         list($host, $port) = $this->extractHostPort($server);
         $c = count($directoryList);
         for($i=$c-2; $i>=0 && $i>=$c-1-$numOldVersionsToCopy; $i--) {
             $directoryToCopy = $directoryList[$i];
             // Copy code
-            $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsync_params . ' "' . $directoryToCopy . '" "' . $host . ':' . $code_dir . '"');
+            $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $directoryToCopy . '" "' . $host . ':' . $codeDir . '"');
         }
     }
 
