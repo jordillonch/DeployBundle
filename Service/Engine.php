@@ -48,6 +48,7 @@ class Engine
     public function setConfigGeneralConfig(array $config)
     {
         $this->configGeneral = $config;
+        if(isset($config['helper'])) $this->helper = $config['helper'];
     }
 
     /**
@@ -56,7 +57,6 @@ class Engine
     public function setConfigZonesConfig(array $config)
     {
         $this->configZones = $config;
-        if(isset($config['helper'])) $this->helper = $config['helper'];
     }
 
     /**
