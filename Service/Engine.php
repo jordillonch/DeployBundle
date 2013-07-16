@@ -21,7 +21,7 @@ class Engine
     protected $silent = null;
     protected $configGeneral = array();
     protected $configZones = array();
-    protected $helpers = array();
+    protected $helper = array();
 
     /**
      * @var OutputInterface
@@ -56,7 +56,7 @@ class Engine
     public function setConfigZonesConfig(array $config)
     {
         $this->configZones = $config;
-        if(isset($config['helpers'])) $this->helpers = $config['helpers'];
+        if(isset($config['helper'])) $this->helper = $config['helper'];
     }
 
     /**
