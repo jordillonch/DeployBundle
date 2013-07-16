@@ -19,6 +19,9 @@ class Engine
     protected $zoneManager;
     protected $dryMode = false;
     protected $silent = null;
+    protected $configGeneral = array();
+    protected $configZones = array();
+    protected $helpers = array();
 
     /**
      * @var OutputInterface
@@ -37,6 +40,23 @@ class Engine
     public function __construct(ZoneManager $zoneManager)
     {
         $this->zoneManager = $zoneManager;
+    }
+
+    /**
+     * @param array $config
+     */
+    public function setConfigGeneralConfig(array $config)
+    {
+        $this->configGeneral = $config;
+    }
+
+    /**
+     * @param array $config
+     */
+    public function setConfigZonesConfig(array $config)
+    {
+        $this->configZones = $config;
+        if(isset($config['helpers'])) $this->helpers = $config['helpers'];
     }
 
     /**

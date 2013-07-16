@@ -43,6 +43,7 @@ class DeployersCompilerPass implements CompilerPassInterface
      *
      * @param ContainerBuilder $container
      * @param array $generalConfig
+     * @param array $zonesConfig
      */
     protected function defineChannelsConfiguration(ContainerBuilder $container, array $generalConfig, array $zonesConfig)
     {
@@ -63,6 +64,8 @@ class DeployersCompilerPass implements CompilerPassInterface
         // Deployer engine
         $engineClass = $container->getParameter('jordillonch_deployer.engine.class');
         $engine = new Definition($engineClass, array($zoneManagerDefinition));
+        $engine->addMethodCall('setConfigGeneralConfig', array($generalConfig));
+        $engine->addMethodCall('setConfigZonesConfig', array($zonesConfig));
 
         // service that developers will use
         $container->setDefinition('jordillonch_deployer.engine', $engine);
