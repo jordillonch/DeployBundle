@@ -278,10 +278,13 @@ abstract class BaseDeployer
 
     protected function getDiffFilesGit($gitDirFrom, $gitDirTo)
     {
+        if (!$this->checkoutProxy) throw new \Exception(__METHOD__ . ' method only works if zone uses a repository proxy.');
+
         $gitUidFrom = $this->getHeadHash($gitDirFrom);
         $gitUidTo = $this->getHeadHash($gitDirTo);
         if ($gitUidFrom && $gitUidFrom) {
-            exec('git --git-dir="' . $gitDirTo . '/.git" diff ' . $gitUidTo . ' ' . $gitUidFrom . ' --name-only', $diffFiles);
+            $urlParsed = parse_url($this->checkoutUrl);
+            $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" diff ' . $gitUidTo . ' ' . $gitUidFrom . ' --name-only', $diffFiles);
 
             return $diffFiles;
         }
@@ -503,7 +506,7 @@ abstract class BaseDeployer
 
     abstract protected function runClearCache();
 
-    protected function exec($command)
+    protected function exec($command, &$output = null)
     {
         $this->logger->debug('exec: ' . $command);
 
