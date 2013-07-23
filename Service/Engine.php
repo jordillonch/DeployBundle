@@ -147,7 +147,7 @@ class Engine
 
         // create new version
         $new_version = date("Ymd_His");
-        $funcRollback = function($zone, $dryMode) {
+        $funcRollback = function(BaseDeployer $zone, $dryMode) {
             $zone->runDownloadCodeRollback();
             if (!$dryMode) $zone->setNewVersionRollback();
         };
@@ -161,8 +161,8 @@ class Engine
     {
         $this->logger->debug('[Code to production]');
 
-        $funcRollback = function($zone, $dryMode) {
-          $zone->runCode2ProductionRollback();
+        $funcRollback = function(BaseDeployer $zone, $dryMode) {
+          if(!$dryMode) $zone->runCode2ProductionRollback();
         };
         $this->call('runCode2Production', array(), $funcRollback);
     }

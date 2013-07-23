@@ -1,5 +1,3 @@
 /Tests/Functional/cache/*
 /Tests/Functional/logs/*
 /vendor/
-composer.lock
-.idea

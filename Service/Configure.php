@@ -11,7 +11,6 @@
 
 namespace JordiLlonch\Bundle\DeployBundle\Service;
 
-use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Yaml\Yaml;
 
 /**

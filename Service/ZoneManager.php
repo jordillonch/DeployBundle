@@ -23,7 +23,7 @@ Class ZoneManager
      * Add Zone to ZoneManager Pool
      * @param $zone
      */
-    public function addZone($zone, $id = null)
+    public function addZone(BaseDeployer $zone, $id = null)
     {
         $this->zones[$zone->getZoneName()] = $zone;
     }
@@ -45,10 +45,9 @@ Class ZoneManager
     /**
      *
      * @param $zone
-     * @param  [type] $id      deployer $id
      * @return [type]          [description]
      */
-    protected function getZoneName($zone, $id = null)
+    protected function getZoneName(BaseDeployer $zone)
     {
         return $zone->getName();
     }
