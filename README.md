@@ -95,6 +95,11 @@ jordi_llonch_deploy.config:
         - me@me.com
     local_repository_dir: /home/deploy/local_repository
     clean_before_days: 7
+    ssh:
+        user: myuser
+        public_key_file: '~/.ssh/id_rsa.pub'
+        private_key_file: '~/.ssh/id_rsa'
+        private_key_file_pwd: 'mypassword'
 jordi_llonch_deploy.zones:
     prod_myproj:
         deployer: myproj
@@ -320,6 +325,11 @@ jordi_llonch_deploy.config:
     local_repository_dir: /home/deploy/deploy_repository
     clean_before_days: 7
     sudo: true
+    ssh:
+        user: myuser
+        public_key_file: '~/.ssh/id_rsa.pub'
+        private_key_file: '~/.ssh/id_rsa'
+        private_key_file_pwd: 'mypassword'
 ```
 
 #### project
@@ -349,7 +359,61 @@ Used in the clean command to remove previous downloaded versions. Always left 4 
 
 #### sudo
 
-Add `sudo` to all commands send to remote servers. If you want to use, you should set your deploy user to sudoers on all remote servers.
+Add `sudo` to all commands send to remote servers. If you want to use, you should set your deploy user to sudoers on all remote servers with NOPASSWD:
+
+`/etc/sudoers`:
+
+```
+deployer_user	ALL=(ALL) NOPASSWD: ALL
+```
+
+
+#### ssh
+
+Ssh configuration to establish connections on remote servers to execute commands.
+
+Here an example of configuration:
+
+```
+ssh:
+    proxy: cli
+    user: jllonch
+    password: 'mypassword'
+    public_key_file: '~/.ssh/id_rsa.pub'
+    private_key_file: '~/.ssh/id_rsa'
+    private_key_file_pwd: 'mykeypassword'
+```
+
+##### proxy
+
+Client to use to execute remote commands.
+
+It could be:
+
+* `pecl`: php-ssh2 extension
+* `cli`: console ssh command
+
+If it is not defined it will try to use `pecl` if it is installed, otherwise it will use `cli`.
+
+##### user
+
+Username used in auth by password and auth by public key.
+
+##### password
+
+Password used in auth by password.
+
+##### public_key_file
+
+Public key file path.
+
+##### private_key_file
+
+Private key file path.
+
+##### private_key_file_pwd
+
+Private key password.
 
 
 #### helper

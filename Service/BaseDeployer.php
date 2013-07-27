@@ -11,6 +11,7 @@
 
 namespace JordiLlonch\Bundle\DeployBundle\Service;
 
+use JordiLlonch\Bundle\DeployBundle\SSH\SshManager;
 use Symfony\Component\Console\Output\OutputInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Finder\Finder;
@@ -51,6 +52,7 @@ abstract class BaseDeployer
     protected $rollingBackFromVersion;
     protected $rollingBackToVersion;
     protected $zonesConfig;
+    protected $sshManager;
 
     public function __construct()
     {
@@ -124,6 +126,9 @@ abstract class BaseDeployer
             $this->newVersion = file_get_contents($new_version_data_file);
         else
             $this->newVersion = null;
+
+        // ssh
+        $this->sshManager = new SshManager($config['ssh']);
     }
 
     public function setOutput(OutputInterface $output)
@@ -134,6 +139,7 @@ abstract class BaseDeployer
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
+        $this->sshManager->setLogger($logger);
     }
 
     protected function getOtherZoneConfig($zoneName, $parameterName)
@@ -323,7 +329,7 @@ abstract class BaseDeployer
     {
         $r = $this->execRemoteServers('ls ' . $this->getRemoteCodeDir(), array($server));
 
-        if(empty($r[$server])) return true;
+        if(empty($r[$server]['output'])) return true;
         else return false;
     }
 
@@ -522,14 +528,33 @@ abstract class BaseDeployer
 
     protected function execRemote(array $servers, $command)
     {
-        $r = array();
-        foreach ($servers as $server) {
-            $r[$server] = null;
-            list($host, $port) = $this->extractHostPort($server);
-            if ($host == 'localhost') $sshCommand = $command;
-            else $sshCommand = 'ssh -t -p ' . $port . ' -o "LogLevel=quiet" -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" ' . $host . ' "' . str_replace('"', '\\"', $command) . '"';
-            if ($this->dryMode) $this->output->writeln($sshCommand);
-            else $r[$server] = $this->exec($sshCommand);
+        if ($this->dryMode) {
+            $r = array();
+            foreach($servers as $server) {
+                $commandMsg = '[' . $server . ']: ' . $command . ' (dryMode)';
+                $this->logger($commandMsg);
+                $this->output->writeln($commandMsg);
+                $r[$server]['exit_code'] = 0;
+                $r[$server]['output'] = '';
+                $r[$server]['error'] = '';
+            }
+        }
+        else {
+            $r = $this->sshManager->exec($servers, $command);
+
+            // Check errors
+            $errors = array();
+            foreach ($r as $server => $item) {
+                if($item['exit_code'] != 0) $errors[] = 'Error on server ' . $server . ': ' . $item['error'];
+            }
+            if(count($errors)) throw new \Exception(implode("\n", $errors));
+        }
+
+        // log output
+        foreach($r as $server => $item) {
+            $this->logger->debug('exec exit_code: ' . $item['exit_code']);
+            if(!empty($item['output'])) $this->logger->debug('exec output: ' . $item['output']);
+            if(!empty($item['error'])) $this->logger->debug('exec error: ' . $item['error']);
         }
 
         return $r;
@@ -951,8 +976,6 @@ abstract class BaseDeployer
         $host = $expServer[0];
         $port = 22;
         if (isset($expServer[1])) $port = $expServer[1];
-
-        return array($host, $port);
 
         return array($host, $port);
     }
