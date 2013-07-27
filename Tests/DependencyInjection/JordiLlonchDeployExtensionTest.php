@@ -43,6 +43,10 @@ config:
         - jordi.llonch@me.com
     local_repository_dir: /tmp/deployer_local_repository
     clean_before_days: 7
+    ssh:
+        user: myuser
+        public_key_file: '~/.ssh/id_rsa.pub'
+        private_key_file: '~/.ssh/id_rsa'
 zones:
     test:
         deployer: test
