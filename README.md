@@ -510,7 +510,7 @@ Hepers automatize common operations like to install *composer* dependencies, to 
 
 ### How use it?
 
-Helpers are `traits` so you only need tu `use` in your inherited class from BaseDeployer. 
+You can use `Helpers` in your Deployer classes to execute common operartions.
 
 Here and example:
 
