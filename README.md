@@ -523,21 +523,15 @@ Here and example:
 namespace MyProj/DeployBundle/Service;
 
 use JordiLlonch\Bundle\DeployBundle\Service\BaseDeployer;
-use JordiLlonch\Bundle\DeployBundle\Helpers\Composer;
-use JordiLlonch\Bundle\DeployBundle\Helpers\Symfony2;
-use JordiLlonch\Bundle\DeployBundle\Helpers\PhpFpm;
-use JordiLlonch\Bundle\DeployBundle\Helpers\SharedDirs;
 
 class Test extends BaseDeployer
 {
-    use Composer, Symfony2, PhpFpm, SharedDirs;
-
     public function initialize()
     {
         parent::initialize();
 
         // Shared dirs
-        $this->helperSharedDirInitialize('logs');
+        $this->getHelper('shared_dirs')->initialize('logs');
     }
 
     public function downloadCode()
@@ -550,14 +544,14 @@ class Test extends BaseDeployer
         $this->output->writeln('<info>Adapting code...</info>');
 
         // composer
-        $this->helperComposerInstall();
-        $this->helperComposerExecuteInstall();
+        $this->getHelper('composer')->install();
+        $this->getHelper('composer')->executeInstall();
 
         // cache warm:up
-        $this->helperSymfony2CacheWarmUp();
+        $this->getHelper('symfony2')->cacheWarmUp();
 
         // shared directories
-        $this->helperSharedDirSet('app/logs', 'logs');
+        $this->getHelper('shared_dirs')->set('app/logs', 'logs');
 
         $this->logger->debug('Copying code to zones...');
         $this->output->writeln('<info>Copying code to zones...</info>');
@@ -572,7 +566,7 @@ class Test extends BaseDeployer
     {
         $this->logger->debug('Clearing cache...');
         $this->output->writeln('<info>Clearing cache...</info>');
-        $this->helperPhpFpmRefresh();
+        $this->getHelper('phpfpm')->refresh();
     }
 }
 ```
@@ -586,11 +580,11 @@ class Test extends BaseDeployer
 
 Easy way to manage shared directories.
 
-`helperSharedDirInitialize($path)`
+`$this->getHelper('shared_dirs')->initialize($path)`
 
 * Initialize given path in the shared directory.
 
-`helperSharedDirSet($pathInAppToLink, $pathInSharedDir)`
+`$this->getHelper('shared_dirs')->set($pathInAppToLink, $pathInSharedDir)`
 
 * Set shared directory for a given path in the project that will be removed and replaced by a symlink to given path to shared directory.
 
@@ -599,11 +593,11 @@ Easy way to manage shared directories.
 
 Provides methods to restart php-fpm gracefully.
 
-`helperPhpFpmRefresh()`
+`$this->getHelper('phpfpm')->refresh()`
 
 * Refresh php-fpm gracefully but you must configure your webserver (e.g. Nginx) to retry the request.
 
-`helperPhpFpmRefreshCommand()`
+`$this->getHelper('phpfpm')->refreshCommand()`
 
 * Command used to reload php-fpm
 
@@ -612,11 +606,11 @@ Provides methods to restart php-fpm gracefully.
 
 Helpers to manage composer installation and some commands.
 
-`helperComposerInstall()`
+`$this->getHelper('composer')->install()`
 
 * Install composer.phar in the new repository dir.
 
-`helperComposerExecuteInstall()`
+`$this->getHelper('composer')->executeInstall()`
 
 * Executes composer install in the new repository dir.
 * If environment is dev or test --dev parameter is added to composer install
@@ -627,7 +621,7 @@ Helpers to manage composer installation and some commands.
 
 For now only provides a method to do a cache warm up.
 
-`helperSymfony2CacheWarmUp()`
+`$this->getHelper('symfony2')->cacheWarmUp()`
 
 * Do a cache:warmup for production environment
 
@@ -636,7 +630,7 @@ For now only provides a method to do a cache warm up.
 
 Useful methods to has feedback of your deploy in GitHub.
 
-`helperGitHubGetCompareUrl($gitUidFrom, $gitUidTo)`
+`$this->getHelper('github')->getCompareUrl($gitUidFrom, $gitUidTo)`
 
 * Give an url comparing two commits
 * You must set your http url to your GitHub repository in jordi_llonch_deploy.zones parameters:
@@ -647,7 +641,7 @@ helper:
         url: https://github.com/YourUser/Repository
 ```
 
-`helperGitHubGetCompareUrlFromCurrentCodeToNewRepository()`
+`$this->getHelper('github')->getCompareUrlFromCurrentCodeToNewRepository()`
 
 * Give an url comparing commits between current running code and the new downloaded code.
 
@@ -656,7 +650,7 @@ helper:
 
 Provides a method to send messages to a room in a HipChat.
 
-`helperHipChatSend($msg, $color='purple')`
+`$this->getHelper('hipchat')->send($msg, $color='purple')`
 
 * Send a message to a given room
 * You must set your token and room_id to your HipChat in jordi_llonch_deploy.general parameters:

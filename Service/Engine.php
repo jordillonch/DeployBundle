@@ -232,4 +232,12 @@ class Engine
     {
         return $this->zoneManager->getZonesNames();
     }
+
+    /**
+     * @return array
+     */
+    public function getHelpersConfig()
+    {
+        return $this->helper;
+    }
 }

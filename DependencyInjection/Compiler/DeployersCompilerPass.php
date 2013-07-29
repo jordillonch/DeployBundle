@@ -20,7 +20,7 @@ class DeployersCompilerPass implements CompilerPassInterface
 {
 
     /**
-     * Define Channel Configuration
+     * Define Deployers Configuration
      *
      * @param  ContainerBuilder $container
      */
@@ -35,7 +35,7 @@ class DeployersCompilerPass implements CompilerPassInterface
             throw new \Exception("Configure jordi_llonch_deploy config on config.yml", 1);
         }
 
-        $this->defineChannelsConfiguration($container, $generalConfig, $zonesConfig);
+        $this->defineDeployersConfiguration($container, $generalConfig, $zonesConfig);
     }
 
     /**
@@ -45,7 +45,7 @@ class DeployersCompilerPass implements CompilerPassInterface
      * @param array $generalConfig
      * @param array $zonesConfig
      */
-    protected function defineChannelsConfiguration(ContainerBuilder $container, array $generalConfig, array $zonesConfig)
+    protected function defineDeployersConfiguration(ContainerBuilder $container, array $generalConfig, array $zonesConfig)
     {
         $this->processTaggedDeployers($container);
 

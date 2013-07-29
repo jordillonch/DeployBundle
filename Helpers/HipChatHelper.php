@@ -10,7 +10,15 @@
 
 namespace JordiLlonch\Bundle\DeployBundle\Helpers;
 
-trait HipChat {
+class HipChatHelper extends Helper {
+    /**
+     * {@inheritdoc}
+     */
+    public function getName()
+    {
+        return 'hipchat';
+    }
+
     /**
      * Send a message to a given room
      * You must set your token and room_id to your HipChat in jordi_llonch_deploy.general parameters:
@@ -22,23 +30,24 @@ trait HipChat {
      * @param string $color
      * @throws \Exception
      */
-    protected function helperHipChatSend($msg, $color='purple')
+    public function send($msg, $color='purple')
     {
-        if(!isset($this->helper['hipchat']['token'])) throw new \Exception('Helper HipChat token is not configured in parameters.yml');
-        if(!isset($this->helper['hipchat']['room_id'])) throw new \Exception('Helper HipChat room_id is not configured in parameters.yml');
+        $helperConfig = $this->getConfig();
+        if(!isset($helperConfig['token'])) throw new \Exception('Helper HipChat token is not configured in parameters.yml');
+        if(!isset($helperConfig['room_id'])) throw new \Exception('Helper HipChat room_id is not configured in parameters.yml');
         $allowedColors = array('yellow', 'red', 'green', 'purple', 'gray', 'random');
         if(!in_array($color, $allowedColors)) throw new \Exception('HipChat helper, background color for message. One of "yellow", "red", "green", "purple", "gray", or "random"');
         
         $msg = nl2br($msg);
-        $this->logger->debug('[helperHipChat] send: "' . $msg . '"');
+        $this->getDeployer()->getLogger()->debug('[helperHipChat] send: "' . $msg . '"');
         $encodedMsg = urlencode($msg);
-        $ch = curl_init('https://api.hipchat.com/v1/rooms/message?auth_token=' . $this->helper['hipchat']['token'] . '&format=json');
+        $ch = curl_init('https://api.hipchat.com/v1/rooms/message?auth_token=' . $helperConfig['token'] . '&format=json');
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_TIMEOUT, 2);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, 'room_id=' . $this->helper['hipchat']['room_id'] . '&from=Deploy&message=' . $encodedMsg . '&notify=0&color=' . $color);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, 'room_id=' . $helperConfig['room_id'] . '&from=Deploy&message=' . $encodedMsg . '&notify=0&color=' . $color);
         curl_exec($ch);
         curl_close($ch);
     }

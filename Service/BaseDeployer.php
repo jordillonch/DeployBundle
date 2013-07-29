@@ -11,12 +11,20 @@
 
 namespace JordiLlonch\Bundle\DeployBundle\Service;
 
+use JordiLlonch\Bundle\DeployBundle\Helpers\ComposerHelper;
+use JordiLlonch\Bundle\DeployBundle\Helpers\GitHubHelper;
+use JordiLlonch\Bundle\DeployBundle\Helpers\HelperSet;
+use JordiLlonch\Bundle\DeployBundle\Helpers\HipChatHelper;
+use JordiLlonch\Bundle\DeployBundle\Helpers\PhpFpmHelper;
+use JordiLlonch\Bundle\DeployBundle\Helpers\SharedDirsHelper;
+use JordiLlonch\Bundle\DeployBundle\Helpers\Symfony2;
+use JordiLlonch\Bundle\DeployBundle\Helpers\Symfony2Helper;
 use JordiLlonch\Bundle\DeployBundle\SSH\SshManager;
 use Symfony\Component\Console\Output\OutputInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Finder\Finder;
 
-abstract class BaseDeployer
+abstract class BaseDeployer implements DeployerInterface
 {
     protected $project;
     protected $environment;
@@ -40,7 +48,7 @@ abstract class BaseDeployer
     protected $sudo = false;
     protected $numOldVersionsToCopy = 3;
     protected $custom;
-    protected $helper;
+    protected $helpersConfig;
     protected $newVersionRollback;
     protected $currentVersionRollback;
 
@@ -54,8 +62,70 @@ abstract class BaseDeployer
     protected $zonesConfig;
     protected $sshManager;
 
+    protected $helperSet;
+
     public function __construct()
     {
+        $this->helperSet = $this->getDefaultHelperSet();
+    }
+
+    /**
+     * Gets the default helper set with the helpers that should always be available.
+     *
+     * @return HelperSet A HelperSet instance
+     */
+    protected function getDefaultHelperSet()
+    {
+        return new HelperSet($this->getDefaultHelpers());
+    }
+
+    /**
+     * @return array
+     */
+    protected function getDefaultHelpers()
+    {
+        return array(
+            new SharedDirsHelper(),
+            new ComposerHelper(),
+            new GitHubHelper(),
+            new HipChatHelper(),
+            new PhpFpmHelper(),
+            new Symfony2Helper(),
+        );
+    }
+
+    /**
+     * Set a helper set to be used with the command.
+     *
+     * @param HelperSet $helperSet The helper set
+     */
+    public function setHelperSet(HelperSet $helperSet)
+    {
+        $this->helperSet = $helperSet;
+    }
+
+    /**
+     * Get the helper set associated with the command.
+     *
+     * @return HelperSet The HelperSet instance associated with this command
+     */
+    public function getHelperSet()
+    {
+        return $this->helperSet;
+    }
+
+    /**
+     * Gets a helper instance by name.
+     *
+     * @param string $name The helper name
+     *
+     * @return mixed The helper value
+     *
+     * @throws \InvalidArgumentException if the helper is not defined
+     */
+    public function getHelper($name)
+    {
+        return $this->helperSet->get($name);
     }
 
     public function setZoneName($name)
@@ -107,7 +177,7 @@ abstract class BaseDeployer
         if (!empty($config['checkout_proxy'])) $this->checkoutProxy = $config['checkout_proxy'];
         if (!empty($config['clean_before_days'])) $this->cleanBeforeDays = $config['clean_before_days'];
         if (!empty($config['sudo'])) $this->sudo = $config['sudo'];
-        if (!empty($config['helper'])) $this->helper = $config['helper'];
+        if (!empty($config['helper'])) $this->helpersConfig = $config['helper'];
 
         // Save config. Useful for custom configs
         if (!empty($config['custom'])) $this->custom = $config['custom'];
@@ -129,6 +199,9 @@ abstract class BaseDeployer
 
         // ssh
         $this->sshManager = new SshManager($config['ssh']);
+
+        // After define config, set deployer for helpers because now there are helpers configs
+        $this->helperSet->setDeployer($this);
     }
 
     public function setOutput(OutputInterface $output)
@@ -142,7 +215,12 @@ abstract class BaseDeployer
         $this->sshManager->setLogger($logger);
     }
 
-    protected function getOtherZoneConfig($zoneName, $parameterName)
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+
+    public function getOtherZoneConfig($zoneName, $parameterName)
     {
         if (!isset($this->zonesConfig[$zoneName])) throw new \Exception('Zone name does not exists.');
         if (!isset($this->zonesConfig[$zoneName][$parameterName])) throw new \Exception('Zone name does not exists.');
@@ -171,94 +249,114 @@ abstract class BaseDeployer
         $this->execRemoteServers($sudo . 'chmod a+wrx "' . $this->getRemoteBinDir() . '"');
     }
 
-    abstract public function downloadCode();
-
-    abstract public function downloadCodeRollback();
-
-    protected function code2ProductionBefore()
+    public function code2ProductionBefore()
     {
     }
 
-    protected function code2ProductionBeforeRollback()
+    public function code2ProductionBeforeRollback()
     {
     }
 
-    protected function code2ProductionAfter()
+    public function code2ProductionAfter()
     {
     }
 
-    protected function code2ProductionAfterRollback()
+    public function code2ProductionAfterRollback()
     {
     }
 
-    protected function getLocalRepositoryDir()
+    public function getLocalRepositoryDir()
     {
         return $this->localRepositoryDir;
     }
 
-    protected function getLocalCodeDir()
+    public function getLocalCodeDir()
     {
-        return $this->localRepositoryDir . '/' . $this->id . '/code';
+        return $this->getLocalRepositoryDir() . '/' . $this->id . '/code';
     }
 
-    protected function getLocalDataDir()
+    public function getLocalDataDir()
     {
-        return $this->localRepositoryDir . '/' . $this->id . '/data';
+        return $this->getLocalRepositoryDir() . '/' . $this->id . '/data';
     }
 
-    protected function getLocalDataCurrentVersionFile()
+    public function getLocalDataCurrentVersionFile()
     {
         return $this->getLocalDataDir() . "/current_version";
     }
 
-    protected function getLocalDataNewVersionFile()
+    public function getLocalDataNewVersionFile()
     {
         return $this->getLocalDataDir() . "/new_version";
     }
 
-    protected function getLocalNewRepositoryDir()
+    public function getLocalNewRepositoryDir()
     {
         return $this->getLocalCodeDir() . '/' . $this->newVersion;
     }
 
-    protected function getLocalCurrentCodeDir()
+    public function getLocalCurrentCodeDir()
     {
         return $this->getLocalCodeDir() . '/' . $this->currentVersion;
     }
 
-    protected function getRemoteRepositoryDir()
+    public function getRemoteRepositoryDir()
     {
         return $this->remoteRepositoryDir . '/' . $this->id;
     }
 
-    protected function getRemoteBinDir()
+    public function getRemoteBinDir()
     {
         return $this->getRemoteRepositoryDir() . '/bin';
     }
 
-    protected function getRemoteSharedDir()
+    public function getRemoteSharedDir()
     {
         return $this->getRemoteRepositoryDir() . '/shared_code';
     }
 
-    protected function getRemoteProductionCodeDir()
+    public function getRemoteProductionCodeDir()
     {
         return $this->remoteProductionDir;
     }
 
-    protected function getRemoteCodeDir()
+    public function getRemoteCodeDir()
     {
         return $this->getRemoteRepositoryDir() . '/code';
     }
 
-    protected function getRemoteCurrentRepositoryDir()
+    public function getRemoteCurrentRepositoryDir()
     {
         return $this->getRemoteCodeDir() . '/' . $this->currentVersion;
     }
 
-    protected function getRemoteNewRepositoryDir()
+    public function getRemoteNewRepositoryDir()
     {
         return $this->getRemoteCodeDir() . '/' . $this->newVersion;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getEnvironment()
+    {
+        return $this->environment;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHelpersConfig()
+    {
+        return $this->helpersConfig;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function getSudo()
+    {
+        return $this->sudo;
     }
 
     protected function downloadCodeGit()
@@ -512,7 +610,7 @@ abstract class BaseDeployer
 
     abstract protected function runClearCache();
 
-    protected function exec($command, &$output = null)
+    public function exec($command, &$output = null)
     {
         $this->logger->debug('exec: ' . $command);
 
@@ -560,7 +658,7 @@ abstract class BaseDeployer
         return $r;
     }
 
-    protected function execRemoteServers($command, $urls = null)
+    public function execRemoteServers($command, $urls = null)
     {
         if (is_null($urls)) $urls = $this->urls;
         $r = $this->execRemote($urls, $command);
@@ -717,120 +815,6 @@ abstract class BaseDeployer
         }
     }
 
-    protected function sendMailDiffs()
-    {
-        // git: extreu diffs
-        $gitMessage = $this->getGitDiffsCommitMessages();
-        $gitFiles = $this->getGitDiffsFiles();
-
-        $toDelete = array(
-            '/push deploy /',
-            "/Merge remote\-tracking branch \'origin\/master\' into deploy\-/"
-        );
-        $extraLines = array(-1, -2, -3, -4, 1);
-        $gitMessage = $this->filterText($gitMessage, $toDelete, $extraLines);
-        $toDelete = array(
-            '/^cache/',
-            '/data\/sql\/schema\.sql/'
-        );
-        $gitFiles = $this->filterText($gitFiles, $toDelete);
-        $gitMessagesFormatted = $this->formatSummaryMessages($gitMessage);
-        $gitFilesFormatted = $this->formatDiffFiles($gitFiles);
-
-        $gitConfigFiles = $this->extractConfigs($gitFiles);
-        $gitMigrationFiles = $this->extractMigrations($gitFiles);
-
-        // text message
-        $body = "DIFFS\n";
-        $body .= "=====\n";
-        $body .= "Messages:\n";
-        $body .= "---------\n";
-        $body .= implode("\n", $gitMessage);
-        $body .= "\n\n";
-        $body .= "Diff files:\n";
-        $body .= "-----------\n";
-        $body .= implode("\n", $gitFiles);
-        $body .= "\n\n";
-        if (count($gitMessage) && count($gitFiles)) echo $body;
-
-        // mail message
-        $bodyHtml = "<html>\n";
-        $bodyHtml .= "<body>\n";
-        $bodyHtml .= "<h1>DIFFS</h1>\n";
-        $bodyHtml .= "<h2>Summary:</h2>\n";
-        $bodyHtml .= "<p>" . implode("", $gitMessagesFormatted) . "</p>";
-        $bodyHtml .= "<br/>\n";
-        if (count($gitConfigFiles)) {
-            $gitConfigFilesFormatted = $this->formatDiffFiles($gitConfigFiles);
-            $bodyHtml .= "<h2>Config files:</h2>\n";
-            $bodyHtml .= "<p>" . implode("<br/>\n", $gitConfigFilesFormatted) . "</p>";
-            $bodyHtml .= "<br/>\n";
-        }
-        if (count($gitMigrationFiles)) {
-            $gitMigrationFilesFormatted = $this->formatDiffFiles($gitMigrationFiles);
-            $bodyHtml .= "<h2>Migration files:</h2>\n";
-            $bodyHtml .= "<p>" . implode("<br/>\n", $gitMigrationFilesFormatted) . "</p>";
-            $bodyHtml .= "<br/>\n";
-        }
-        $bodyHtml .= "<h2>Diff files:</h2>\n";
-        $bodyHtml .= "<p>" . implode("<br/>\n", $gitFilesFormatted) . "</p>";
-        $bodyHtml .= "<br/>\n";
-        $bodyHtml .= "<h2>Messages:</h2>\n";
-        $bodyHtml .= "<p>" . implode("<br/>\n", $gitMessagesFormatted) . "</p>";
-        $bodyHtml .= "<br/>\n";
-        $bodyHtml .= "</body>\n";
-        $bodyHtml .= "</html>\n\n";
-
-        // envia mail
-        if (count($gitMessage) && count($gitFiles)) {
-            $mails = $this->mailTo;
-            foreach ($mails as $mail) {
-                $subject = 'Deploy ' . $this->environment . '_' . $this->project . ' - ' . $this->id;
-                $headers = 'MIME-Version: 1.0' . "\n";
-                $headers .= 'Content-type: text/html; charset=utf-8' . "\n";
-                $headers .= 'From: Deploy Robot <' . $this->mailFrom . ">\n";
-                $headers .= 'Reply-To: Deploy Robot <' . $this->mailFrom . ">\n";
-                $headers .= 'X-Mailer: PHP/' . phpversion();
-
-                $to = $mail;
-                $r = mail($to, $subject, $bodyHtml, $headers);
-                if (!$r) echo 'MAIL NOT SENT.' . "\n";
-            }
-        }
-
-//        $this->pushLastDeployTag();
-    }
-
-    protected function sendMailRollback()
-    {
-        $versionFrom = $this->rollingBackFromVersion;
-        $versionTo = $this->rollingBackToVersion;
-
-        $bodyHtml = "<html>\n";
-        $bodyHtml .= "<body>\n";
-        $bodyHtml .= "<h1>ROLLBACK</h1>\n";
-        $bodyHtml .= '<table border="0" padding="1">';
-        $bodyHtml .= "<tr><td>From version:</td><td>$versionFrom</td></tr>";
-        $bodyHtml .= "<tr><td>To version:</td><td>$versionTo</td></tr>";
-        $bodyHtml .= "<table/>\n";
-        $bodyHtml .= "</body>\n";
-        $bodyHtml .= "</html>\n\n";
-
-        $mails = $this->mailTo;
-        foreach ($mails as $mail) {
-            $subject = 'Rollback ' . $this->environment . '_' . $this->project . ' - ' . $this->id;
-            $headers = 'MIME-Version: 1.0' . "\n";
-            $headers .= 'Content-type: text/html; charset=utf-8' . "\n";
-            $headers .= 'From: Deploy Robot <' . $this->mailFrom . ">\n";
-            $headers .= 'Reply-To: Deploy Robot <' . $this->mailFrom . ">\n";
-            $headers .= 'X-Mailer: PHP/' . phpversion();
-
-            $to = $mail;
-            $r = mail($to, $subject, $bodyHtml, $headers);
-            if (!$r) echo 'MAIL NOT SENT.' . "\n";
-        }
-    }
-
     protected function getGitDiffsCommitMessages()
     {
         $newRepositoryDir = $this->getLocalNewRepositoryDir();
@@ -900,16 +884,6 @@ abstract class BaseDeployer
         return $r;
     }
 
-    protected function extractMigrations($data)
-    {
-        $r = array();
-        foreach ($data as $i => $line) {
-            if (preg_match('/lib\/migration\/doctrine\//', $line)) $r[] = $line;
-        }
-
-        return $r;
-    }
-
     public function sendWarningNDaysDeploy($optionSendWarningNDaysDeploy)
     {
         // check
@@ -945,7 +919,7 @@ abstract class BaseDeployer
 
     }
 
-    protected function filesReplacePattern(array $paths, $pattern, $replacement)
+    public function filesReplacePattern(array $paths, $pattern, $replacement)
     {
         $errors = array();
         foreach ($paths as $path) {
@@ -1007,7 +981,6 @@ abstract class BaseDeployer
      */
     protected function pushLastDeployTag($newRepositoryDir = null)
     {
-return;
         // Add tag
         if(is_null($newRepositoryDir)) $newRepositoryDir = $this->getLocalNewRepositoryDir();
         $headHash = $this->getHeadHash();
@@ -1037,7 +1010,7 @@ return;
      * Get git from-to hash between two repositories
      * @return array($gitHashFrom, $gitHashTo)
      */
-    protected function getHashFromCurrentCodeToNewRepository()
+    public function getHashFromCurrentCodeToNewRepository()
     {
         $repoDirFrom = $this->getLocalCurrentCodeDir();
         $repoDirTo = $this->getLocalNewRepositoryDir();
