@@ -90,9 +90,7 @@ new JordiLlonch\Bundle\DeployBundle\JordiLlonchDeployBundle(),
 ```
 jordi_llonch_deploy.config:
     project: MyProject
-    mail_from: iamrobot@me.com
-    mail_to:
-        - me@me.com
+    vcs: git
     local_repository_dir: /home/deploy/local_repository
     clean_before_days: 7
     ssh:
@@ -140,7 +138,7 @@ class Test extends BaseDeployer
     {
         $this->logger->debug('Downloading code...');
         $this->output->writeln('<info>Downloading code...</info>');
-        $this->downloadCodeGit();
+        $this->downloadCodeVcs();
 
         $this->logger->debug('Adapting code');
         $this->output->writeln('<info>Adapting code...</info>');
@@ -319,9 +317,7 @@ You must set general configurations and zones.
 ```
 jordi_llonch_deploy.config:
     project: MyProject
-    mail_from: iamrobot@me
-    mail_to:
-        - me@me.com
+    vcs: git
     local_repository_dir: /home/deploy/deploy_repository
     clean_before_days: 7
     sudo: true
@@ -538,7 +534,7 @@ class Test extends BaseDeployer
     {
         $this->logger->debug('Downloading code...');
         $this->output->writeln('<info>Downloading code...</info>');
-        $this->downloadCodeGit();
+        $this->downloadCodeVcs();
 
         $this->logger->debug('Adapting code');
         $this->output->writeln('<info>Adapting code...</info>');

@@ -20,6 +20,8 @@ use JordiLlonch\Bundle\DeployBundle\Helpers\SharedDirsHelper;
 use JordiLlonch\Bundle\DeployBundle\Helpers\Symfony2;
 use JordiLlonch\Bundle\DeployBundle\Helpers\Symfony2Helper;
 use JordiLlonch\Bundle\DeployBundle\SSH\SshManager;
+use JordiLlonch\Bundle\DeployBundle\VCS\VcsFactory;
+use JordiLlonch\Bundle\DeployBundle\VCS\VcsInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Finder\Finder;
@@ -28,8 +30,6 @@ abstract class BaseDeployer implements DeployerInterface
 {
     protected $project;
     protected $environment;
-    protected $mailFrom = "iamrobot@me.com";
-    protected $mailTo;
     protected $id;
     protected $urls;
     protected $localRepositoryDir;
@@ -63,6 +63,10 @@ abstract class BaseDeployer implements DeployerInterface
     protected $sshManager;
 
     protected $helperSet;
+    /**
+     * @var VcsInterface
+     */
+    protected $vcs;
 
     public function __construct()
     {
@@ -166,8 +170,6 @@ abstract class BaseDeployer implements DeployerInterface
         // Set config
         $this->project = $config['project'];
         $this->environment = $config['environment'];
-        $this->mailFrom = $config['mail_from'];
-        $this->mailTo = $config['mail_to'];
         $this->urls = $config['urls'];
         $this->localRepositoryDir = $config['local_repository_dir'];
         $this->checkoutUrl = $config['checkout_url'];
@@ -197,6 +199,10 @@ abstract class BaseDeployer implements DeployerInterface
         else
             $this->newVersion = null;
 
+        // vcs
+        $vcsFactory = new VcsFactory($this->checkoutUrl, $this->checkoutBranch, $this->checkoutProxy, $this->dryMode);
+        $this->vcs = $vcsFactory->create($config['vcs']);
+
         // ssh
         $this->sshManager = new SshManager($config['ssh']);
 
@@ -213,6 +219,7 @@ abstract class BaseDeployer implements DeployerInterface
     {
         $this->logger = $logger;
         $this->sshManager->setLogger($logger);
+        $this->vcs->setLogger($logger);
     }
 
     public function getLogger()
@@ -359,41 +366,15 @@ abstract class BaseDeployer implements DeployerInterface
         return $this->sudo;
     }
 
-    protected function downloadCodeGit()
+    protected function downloadCodeVcs()
     {
         $this->logger->debug(__METHOD__);
-
-        // Update repo if it is a proxy of a remote repo
-        if ($this->checkoutProxy) {
-            $urlParsed = parse_url($this->checkoutUrl);
-            $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" --work-tree="' . $urlParsed['path'] . '" reset --hard HEAD');
-            $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" --work-tree="' . $urlParsed['path'] . '" pull');
-        }
-
-        // Clone repo
-        $this->exec('git clone "' . $this->checkoutUrl . '" "' . $this->getLocalNewRepositoryDir() . '" --branch "' . $this->checkoutBranch . '" --depth=1');
-
-        // Overwrite origin remote if it is a proxy
-        if ($this->checkoutProxy) {
-            $originUrlProxyRepo = $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" config --get remote.origin.url');
-            $this->exec('git --git-dir="' . $this->getLocalNewRepositoryDir() . '/.git" config --replace-all remote.origin.url "' . $originUrlProxyRepo . '"');
-        }
+        $this->vcs->cloneCodeRepository();
     }
 
-    protected function getDiffFilesGit($gitDirFrom, $gitDirTo)
+    protected function getDiffFilesVcs($dirFrom, $dirTo)
     {
-        if (!$this->checkoutProxy) throw new \Exception(__METHOD__ . ' method only works if zone uses a repository proxy.');
-
-        $gitUidFrom = $this->getHeadHash($gitDirFrom);
-        $gitUidTo = $this->getHeadHash($gitDirTo);
-        if ($gitUidFrom && $gitUidFrom) {
-            $urlParsed = parse_url($this->checkoutUrl);
-            $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" diff ' . $gitUidTo . ' ' . $gitUidFrom . ' --name-only', $diffFiles);
-
-            return $diffFiles;
-        }
-
-        return array();
+        return $this->vcs->getDiffFiles($dirFrom, $dirTo);
     }
 
     public function code2Servers($rsyncParams = '')
@@ -470,6 +451,9 @@ abstract class BaseDeployer implements DeployerInterface
         $this->newVersionRollback = $this->newVersion;
         $this->newVersion = $new_version;
         file_put_contents($this->getLocalDataNewVersionFile(), $this->newVersion);
+
+        // Set new destionation path to new destination
+        $this->vcs->setDestinationPath($this->getLocalNewRepositoryDir());
     }
 
     public function setNewVersionRollback()
@@ -503,29 +487,13 @@ abstract class BaseDeployer implements DeployerInterface
 
     public function runDownloadCode($newVersion)
     {
-        // get last version from remote
-        if($this->checkoutProxy)
-        {
-            $urlParsed = parse_url($this->checkoutUrl);
-            $gitVersions = $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" ls-remote origin ' . $this->checkoutBranch);
-        }
-        else $gitVersions = $this->exec('git ls-remote "' . $this->checkoutUrl . '" origin ' . $this->checkoutBranch);
-
-        $gitVersions = explode("\n", $gitVersions);
-        if (!isset($gitVersions[0])) throw new \Exception("Git repository empty.");
-        $gitVersion = '';
-        foreach ($gitVersions as $item) if (\preg_match('/' . $this->checkoutBranch . '/', $item)) $gitVersion = $item;
-        if (empty($gitVersion)) throw new \Exception("Git branch " . $this->checkoutBranch . " not found.");
-        $gitVersion = explode("\t", $gitVersion);
-        $gitVersion = $gitVersion[0];
-        if (empty($gitVersion)) throw new \Exception("Unable to get last git version.");
-        $newVersion .= '_' . $gitVersion;
+        $vcsVersion = $this->vcs->getLastVersionFromRemote();
+        $newVersion .= '_' . $vcsVersion;
 
         $this->logger->debug(__METHOD__ . ': ' . $newVersion);
 
         $this->setNewVersion($newVersion);
         $this->downloadCode();
-        //$this->clean();
     }
 
     public function runClean()
@@ -806,71 +774,9 @@ abstract class BaseDeployer implements DeployerInterface
         return $r;
     }
 
-    protected function code2ProductionAfterSendMail()
-    {
-        if (!$this->rollingBack) {
-            $this->sendMailDiffs();
-        } else {
-            $this->sendMailRollback();
-        }
-    }
-
-    protected function getGitDiffsCommitMessages()
-    {
-        $newRepositoryDir = $this->getLocalNewRepositoryDir();
-        exec('git --git-dir="' . $newRepositoryDir . '/.git" log ' . $this->getTargetDeployLastTag() . '..HEAD', $r);
-
-        return $r;
-    }
-
-    protected function getGitDiffsFiles()
-    {
-        $newRepositoryDir = $this->getLocalNewRepositoryDir();
-        $exec = 'git --git-dir="' . $newRepositoryDir . '/.git" diff --name-only ' . $this->getTargetDeployLastTag() . ' HEAD';
-        exec($exec, $r);
-
-        return $r;
-    }
-
     protected function getTargetDeployLastTag()
     {
         return 'deployer_last_' . $this->environment . '_' . $this->project . '_' . $this->id;
-    }
-
-    protected function formatSummaryMessages($data)
-    {
-        $r = array();
-        $r[] = '<table border="0" padding="1" width="100%">' . "\n";
-        foreach ($data as $i => $line) {
-            if (preg_match('/^Author\: (.*)/', $line, $matches)) {
-                $offset = 0;
-                if (preg_match('/^Merge/', $data[$i - 1])) $offset = -1;
-                $author = trim($matches[1]);
-                $commit = trim(str_replace('commit ', '', $data[$i - 1 + $offset]));
-                $date = date('Y-m-d H:i', strtotime(trim(str_replace('Date: ', '', $data[$i + 1]))));
-                $message = $data[$i + 3];
-                $r[] = '<tr><td width="15%"><a href="http://git.me.com/gitweb/?p=me;a=commit;h=' . $commit . '">' . htmlspecialchars(
-                        $date
-                    ) . '</a></td><td width="15%">' . htmlspecialchars(
-                        $author
-                    ) . '</td><td width="70%">' . htmlspecialchars($message) . '</td></tr>' . "\n";
-            }
-        }
-        $r[] = '</table>' . "\n";
-
-        return $r;
-    }
-
-    protected function formatDiffFiles($data)
-    {
-        $r = array();
-        foreach ($data as $i => $line) {
-            $r[] = '<a href="http://git.me.com/gitweb/?p=me;a=blob;hb=HEAD;f=' . $line . '">' . htmlspecialchars(
-                    $line
-                ) . '</a>';
-        }
-
-        return $r;
     }
 
     protected function extractConfigs($data)
@@ -882,41 +788,6 @@ abstract class BaseDeployer implements DeployerInterface
         }
 
         return $r;
-    }
-
-    public function sendWarningNDaysDeploy($optionSendWarningNDaysDeploy)
-    {
-        // check
-        $status = $this->getStatus();
-        $current_version = $status['current_version'];
-        list($date) = explode('_', $current_version);
-        $date = new \DateTime($date);
-        $interval = $date->diff(new \DateTime('now'));
-        if ($interval->format('%a') >= $optionSendWarningNDaysDeploy) // send warning
-        {
-            $bodyHtml = "<html>\n";
-            $bodyHtml .= "<body>\n";
-            $bodyHtml .= "<h1>OLD DEPLOY [{$this->id}]</h1>\n";
-            $bodyHtml .= '<table border="0" padding="1">';
-            $bodyHtml .= "<tr><td>Current version:</td><td>$current_version</td></tr>";
-            $bodyHtml .= "<table/>\n";
-            $bodyHtml .= "</body>\n";
-            $bodyHtml .= "</html>\n\n";
-
-            $mails = $this->mailTo;
-            foreach ($mails as $mail) {
-                $subject = 'Old code ' . $this->environment . '_' . $this->project . ' - ' . $this->id;
-                $headers = 'MIME-Version: 1.0' . "\r\n";
-                $headers .= 'Content-type: text/html; charset=utf-8' . "\r\n";
-                $headers .= 'From: ' . $this->mailFrom . "\r\n";
-                $headers .= 'Reply-To: ' . $this->mailFrom . "\r\n";
-                $headers .= 'X-Mailer: PHP/' . phpversion();
-                $to = $mail;
-                $r = mail($to, $subject, $bodyHtml, $headers);
-                if (!$r) echo 'MAIL NOT SENT.' . "\n";
-            }
-        }
-
     }
 
     public function filesReplacePattern(array $paths, $pattern, $replacement)
@@ -981,34 +852,21 @@ abstract class BaseDeployer implements DeployerInterface
      */
     protected function pushLastDeployTag($newRepositoryDir = null)
     {
-        // Add tag
-        if(is_null($newRepositoryDir)) $newRepositoryDir = $this->getLocalNewRepositoryDir();
-        $headHash = $this->getHeadHash();
-        $this->exec('git --git-dir="' . $newRepositoryDir . '/.git" fetch --tags');
-        $this->exec('git --git-dir="' . $newRepositoryDir . '/.git" tag -f "' . $this->getTargetDeployLastTag() . '" ' . $headHash);
-
-        // Delete tag
-        $this->exec('git --git-dir="' . $newRepositoryDir . '/.git" push --tags origin :refs/tags/' . $this->getTargetDeployLastTag());
-        // Push to origin
-        $this->exec('git --git-dir="' . $newRepositoryDir . '/.git" push --tags origin ' . $this->checkoutBranch);
+        $this->vcs->pushLastDeployTag($newRepositoryDir);
     }
 
     protected function getHeadHash($repositoryDir = null)
     {
         $this->logger->debug(__METHOD__);
 
-        // Check if repositoryDir exists
-        if(!file_exists($repositoryDir . '/.git')) return 'HEAD';
-
-        if(is_null($repositoryDir)) $repositoryDir = $this->getLocalNewRepositoryDir();
-        $hash = $this->exec('git --git-dir="' . $repositoryDir . '/.git" rev-parse HEAD');
+        $hash = $this->vcs->getHeadHash($repositoryDir);
 
         return $hash;
     }
 
     /**
-     * Get git from-to hash between two repositories
-     * @return array($gitHashFrom, $gitHashTo)
+     * Get from-to hash between two repositories
+     * @return array($hashFrom, $hashTo)
      */
     public function getHashFromCurrentCodeToNewRepository()
     {
@@ -1020,10 +878,10 @@ abstract class BaseDeployer implements DeployerInterface
 
     protected function getHashFromTo($repoDirFrom, $repoDirTo)
     {
-        $gitHashFrom = $this->getHeadHash($repoDirFrom);
-        $gitHashTo = $this->getHeadHash($repoDirTo);
+        $hashFrom = $this->getHeadHash($repoDirFrom);
+        $hashTo = $this->getHeadHash($repoDirTo);
 
-        return array($gitHashFrom, $gitHashTo);
+        return array($hashFrom, $hashTo);
     }
 
     /**
