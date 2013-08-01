@@ -645,11 +645,6 @@ abstract class BaseDeployer implements DeployerInterface
         $this->execRemoteServers($command);
     }
 
-    public function mkdirRecursive($pathname, $mode)
-    {
-        return @mkdir($pathname, $mode, true);
-    }
-
     public function clean()
     {
         $this->logger->debug('clean old code');
@@ -788,27 +783,6 @@ abstract class BaseDeployer implements DeployerInterface
         }
 
         return $r;
-    }
-
-    public function filesReplacePattern(array $paths, $pattern, $replacement)
-    {
-        $errors = array();
-        foreach ($paths as $path) {
-            if (!file_exists($path)) {
-                $error = 'File "' . $path . '" does not exists.';
-                //self::log $error . "\n";
-                $errors[] = $error;
-
-                continue;
-            }
-            $content = file_get_contents($path);
-            $content = preg_replace($pattern, $replacement, $content);
-            file_put_contents($path, $content);
-        }
-
-        if (count($errors)) return $errors;
-
-        return true;
     }
 
     /**

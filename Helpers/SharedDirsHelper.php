@@ -25,7 +25,7 @@ class SharedDirsHelper extends Helper {
     public function initialize($path)
     {
         $sharedDir = $this->getDeployer()->getRemoteSharedDir();
-        $this->getDeployer()->mkdirRecursive($sharedDir . '/' . $path, 0777);
+        mkdir($sharedDir . '/' . $path, 0777, true);
         $sudo = '';
         if($this->getDeployer()->getSudo()) $sudo = 'sudo ';
         $this->getDeployer()->execRemoteServers($sudo . 'mkdir -p ' . $sharedDir . '/' . $path);

@@ -39,7 +39,8 @@ class Symfony2Helper extends Helper {
         foreach ($finder as $file) $paths[] = $file->getRealPath();
         $pattern = '/' . str_replace('/', '\\/', $localNewRepositoryDir) . '/';
         $replace = $this->getDeployer()->getRemoteNewRepositoryDir();
-        $this->getDeployer()->filesReplacePattern($paths, $pattern, $replace);
+        $filesHelper = new FilesHelper();
+        $filesHelper->filesReplacePattern($paths, $pattern, $replace);
         $this->getDeployer()->exec('chmod -R a+wr ' . $localNewRepositoryDir . '/app/cache');
     }
 }

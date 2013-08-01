@@ -62,8 +62,4 @@ interface DeployerInterface {
     public function getHelpersConfig();
     public function getHashFromCurrentCodeToNewRepository();
     public function getSudo();
-
-    // Utils
-    public function mkdirRecursive($pathname, $mode);
-    public function filesReplacePattern(array $paths, $pattern, $replacement);
 }
