@@ -67,10 +67,8 @@ class JordiLlonchDeployContainerTest extends \PHPUnit_Framework_TestCase
         return <<<'EOF'
 config:
     project: MyProject
-    mail_from: iamrobot@me.com
-    mail_to:
-        - jordi.llonch@me.com
     local_repository_dir: /tmp/deployer_local_repository
+    vcs: git
     clean_before_days: 7
     ssh:
         user: myuser
