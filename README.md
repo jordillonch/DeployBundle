@@ -92,7 +92,7 @@ jordi_llonch_deploy.config:
     project: MyProject
     vcs: git
     local_repository_dir: /home/deploy/local_repository
-    clean_before_days: 7
+    clean_max_deploys: 7
     ssh:
         user: myuser
         public_key_file: '/home/myuser/.ssh/id_rsa.pub'
@@ -289,7 +289,7 @@ app/console deployer:configure zone [add, set, rm, list, list_json] [url]
 
 ### clean
 
-Remove code older than configured days. `clean_before_days` parameter is used. Always left 4 previous downloaded versions.
+Remove old code. Left `clean_max_deploys` deploys.
 
 ```
 app/console deployer:clean
@@ -319,7 +319,7 @@ jordi_llonch_deploy.config:
     project: MyProject
     vcs: git
     local_repository_dir: /home/deploy/deploy_repository
-    clean_before_days: 7
+    clean_max_deploys: 7
     sudo: true
     ssh:
         user: myuser
@@ -348,9 +348,9 @@ Mail to send emails about deployments. It is an array.
 Directory where deployer clone your repositories, adapt code and save data about versions in the deploy system.
 
 
-#### clean_before_days
+#### clean_max_deploys
 
-Used in the clean command to remove previous downloaded versions. Always left 4 previous downloaded versions.
+Used in the clean command to remove previous downloaded versions. Left `clean_max_deploys` downloaded versions.
 
 
 #### sudo

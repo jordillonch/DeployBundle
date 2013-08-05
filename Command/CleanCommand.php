@@ -23,9 +23,9 @@ class CleanCommand extends BaseCommand
 
         $this
             ->setName('deployer:clean')
-            ->setDescription('Remove code older than configured days. <info>clean_before_days</info> parameter is used.')
+            ->setDescription('Remove old code. Left <info>clean_max_deploys</info> deploys.')
             ->setHelp(<<<EOT
-The <info>deployer:clean</info> removes code older than configured days.
+The <info>deployer:clean</info> removes old code. Left <info>clean_max_deploys</info> deploys..
 EOT
         );
     }

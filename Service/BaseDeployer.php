@@ -40,7 +40,7 @@ abstract class BaseDeployer implements DeployerInterface
     protected $checkoutUrl;
     protected $checkoutBranch;
     protected $checkoutProxy = false;
-    protected $cleanBeforeDays = 7;
+    protected $cleanMaxDeploys = 7;
     protected $dryMode = false;
     protected $newVersion;
     protected $currentVersion;
@@ -188,7 +188,7 @@ abstract class BaseDeployer implements DeployerInterface
         $this->remoteRepositoryDir = $config['repository_dir'];
         $this->remoteProductionDir = $config['production_dir'];
         if (!empty($config['checkout_proxy'])) $this->checkoutProxy = $config['checkout_proxy'];
-        if (!empty($config['clean_before_days'])) $this->cleanBeforeDays = $config['clean_before_days'];
+        if (!empty($config['clean_max_deploys'])) $this->cleanMaxDeploys = $config['clean_max_deploys'];
         if (!empty($config['sudo'])) $this->sudo = $config['sudo'];
         if (!empty($config['helper'])) $this->helpersConfig = $config['helper'];
 
@@ -683,39 +683,27 @@ abstract class BaseDeployer implements DeployerInterface
 
     public function clean()
     {
-        $this->logger->debug('clean old code');
-        $sudo = $this->sudo ? 'sudo ' : '';
-        $dir = new \DirectoryIterator($this->getLocalCodeDir());
-        $count = \iterator_count($dir);
-        $firstTextOut = false;
-        foreach ($dir as $fileinfo) {
-            if ($count <= 4)
-                break; // left a minimum of 4 items (., .., current repo and a bak one repo)
+        $this->logger->debug('Cleaning old deploys...');
 
-            if (!$fileinfo->isDot() && $fileinfo->isDir() && $fileinfo != basename(
-                    $this->getRemoteCurrentRepositoryDir()
-                )
-            ) // also check if directory is the current one
-            {
-                $arr_info = explode("_", $fileinfo);
-                if (count($arr_info) != 3)
-                    continue;
-                list($date, $time) = $arr_info;
-                if ($fileinfo->getCTime() < time() - ($this->cleanBeforeDays * 24 * 3600)) {
-                    $this->logger->debug('removing: ' . $this->getLocalCodeDir() . '/' . $fileinfo);
-                    if(!$firstTextOut) $this->output->writeln('<info>Removing old code...</info>');
-                    $firstTextOut = true;
-                    $this->exec($sudo . 'rm -rf ' . $this->getLocalCodeDir() . '/' . $fileinfo);
-                    $this->execRemoteServers($sudo. 'rm -rf ' . $this->getRemoteCodeDir() . '/' . $fileinfo);
-                }
-            }
-            $count--;
+        $finder = new Finder();
+        $finder->in($this->getLocalCodeDir());
+        $finder->directories();
+        $finder->sortByName();
+        $finder->depth(0);
+        $directoryList = array();
+        foreach ($finder as $file) $directoryList[] = $file->getBaseName();
+
+        $sudo = $this->sudo ? 'sudo ' : '';
+        while(count($directoryList) > $this->cleanMaxDeploys) {
+            $path = array_shift($directoryList);
+            $this->exec($sudo . 'rm -rf ' . $this->getLocalCodeDir() . '/' . $path);
+            $this->execRemoteServers($sudo. 'rm -rf ' . $this->getRemoteCodeDir() . '/' . $path);
         }
     }
 
-    public function setCleanBeforeDays($days)
+    public function setCleanMaxDeploys($maxDeploys)
     {
-        $this->cleanBeforeDays = $days;
+        $this->cleanMaxDeploys = $maxDeploys;
     }
 
     public function runRollback($version)

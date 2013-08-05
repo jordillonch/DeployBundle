@@ -43,7 +43,7 @@ class Configuration implements ConfigurationInterface
                             ->end()
                             ->scalarNode('local_repository_dir')->isRequired()
                             ->end()
-                            ->scalarNode('clean_before_days')
+                            ->scalarNode('clean_max_deploys')
                             ->end()
                             ->scalarNode('sudo')
                             ->end()
