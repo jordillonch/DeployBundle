@@ -117,7 +117,7 @@ class Git implements VcsInterface {
         $this->exec('git --git-dir="' . $pathVcs . '/.git" tag -f "' . $tag . '" ' . $headHash);
 
         // Delete tag
-        $this->exec('git --git-dir="' . $pathVcs . '/.git" push --tags origin :refs/tags/' . $this->getTargetDeployLastTag());
+        $this->exec('git --git-dir="' . $pathVcs . '/.git" push --tags origin :refs/tags/' . $tag);
         // Push to origin
         $this->exec('git --git-dir="' . $pathVcs . '/.git" push --tags origin ' . $this->branch);
     }
