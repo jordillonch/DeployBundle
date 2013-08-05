@@ -71,9 +71,10 @@ class SshManager {
             return $this->cache[$server];
         }
 
+        list($host, $port) = $this->extractHostPort($server);
+        if($host == 'localhost') $this->proxy = new LocalhostProxy();
         $ssh = new SshClient($this->proxy);
         if($this->logger) $ssh->setLogger($this->logger);
-        list($host, $port) = $this->extractHostPort($server);
         $parameters = $this->parameters;
         $parameters['ssh_port'] = $port;
         $ssh->setParameters($parameters);
