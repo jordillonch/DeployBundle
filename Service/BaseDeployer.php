@@ -60,6 +60,7 @@ abstract class BaseDeployer implements DeployerInterface
     protected $rollingBackFromVersion;
     protected $rollingBackToVersion;
     protected $zonesConfig;
+    protected $sshConfig;
 
     /**
      * @var SshManager
@@ -215,6 +216,7 @@ abstract class BaseDeployer implements DeployerInterface
 
         // ssh
         $this->sshManager = new SshManager($config['ssh']);
+        $this->sshConfig = $config['ssh'];
 
         // After define config, set deployer for helpers because now there are helpers configs
         $this->helperSet->setDeployer($this);
@@ -426,7 +428,7 @@ abstract class BaseDeployer implements DeployerInterface
 
                 // Copy code
                 if($host == 'localhost') $this->exec('cp -a "' . $newRepositoryDir . '" "' . $codeDir . '"');
-                else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $newRepositoryDir . '" "' . $host . ':' . $codeDir . '"');
+                else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i ' . $this->sshConfig['private_key_file'] . ' -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $newRepositoryDir . '" "' . $host . ':' . $codeDir . '"');
             } catch (\Exception $e) {
                 throw $e;
             }
@@ -474,7 +476,7 @@ abstract class BaseDeployer implements DeployerInterface
             $directoryToCopy = $directoryList[$i];
             // Copy code
             if($host == 'localhost') $this->exec('cp -a "' . $directoryToCopy . '" "' . $codeDir . '"');
-            else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $directoryToCopy . '" "' . $host . ':' . $codeDir . '"');
+            else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i ' . $this->sshConfig['private_key_file'] . ' -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $directoryToCopy . '" "' . $host . ':' . $codeDir . '"');
         }
     }
 
@@ -654,7 +656,7 @@ abstract class BaseDeployer implements DeployerInterface
         foreach($r as $server => $item) {
             $this->logger->debug('exec exit_code: ' . $item['exit_code']);
             if(!empty($item['output'])) $this->logger->debug('exec output: ' . $item['output']);
-            if(!empty($item['error'])) $this->logger->debug('exec error: ' . $item['error']);
+            if(!empty($item['error']) && $item['error'] != 'tcgetattr: Invalid argument' . "\n") $this->logger->debug('exec error: ' . $item['error']);
         }
 
         return $r;
