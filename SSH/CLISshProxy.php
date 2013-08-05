@@ -97,7 +97,7 @@ class CLISshProxy extends BaseProxy
         $keyFile = $this->privateKeyFile ? '-i '.$this->privateKeyFile : '';
 
         return sprintf(
-            "%s -tt -o \"LogLevel=quiet\" -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -p %s %s %s %s %s",
+            "%s -t -t -o \"LogLevel=quiet\" -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -p %s %s %s %s %s",
             $this->executable,
             $this->port,
             $keyFile,
