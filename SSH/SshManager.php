@@ -68,12 +68,14 @@ class SshManager {
     {
         if(isset($this->cache[$server])) {
             if($this->logger) $this->logger->debug('SshClient from cache (' . $server . ')');
+
             return $this->cache[$server];
         }
 
         list($host, $port) = $this->extractHostPort($server);
-        if($host == 'localhost') $this->proxy = new LocalhostProxy();
-        $ssh = new SshClient($this->proxy);
+        $proxy = clone $this->proxy;
+        if($host == 'localhost') $proxy = new LocalhostProxy();
+        $ssh = new SshClient($proxy);
         if($this->logger) $ssh->setLogger($this->logger);
         $parameters = $this->parameters;
         $parameters['ssh_port'] = $port;
