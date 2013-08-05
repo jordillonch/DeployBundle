@@ -15,8 +15,6 @@
 
 namespace JordiLlonch\Bundle\DeployBundle\SSH;
 
-use Symfony\Component\Process\Process;
-
 class CLISshProxy extends BaseProxy
 {
     protected $executable = 'ssh';
@@ -25,7 +23,6 @@ class CLISshProxy extends BaseProxy
     protected $user = '';
     protected $password = '';
     protected $privateKeyFile = null;
-    protected $timeout = 600;
 
     private function canConnect()
     {
@@ -82,13 +79,11 @@ class CLISshProxy extends BaseProxy
         $preparedCmd = $this->prepareCommand($cmd);
         if($this->logger) $this->logger->debug('preparedCmd: ' . $preparedCmd);
 
-        $process = new Process($preparedCmd, null, null, null, $this->timeout);
-        $process->run();
-        $this->lastOutput = $process->getOutput();
-        $this->lastError = $process->getErrorOutput();
-        $process->getExitCode();
+        exec($preparedCmd, $output, $returnVar);
+        if($returnVar == 0) $this->lastOutput = implode("\n", $output);
+        else $this->lastError = implode("\n", $output);
 
-        return $process->getExitCode();
+        return $returnVar;
     }
 
     private function prepareCommand($cmd)
