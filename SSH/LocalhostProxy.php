@@ -22,14 +22,17 @@ class LocalhostProxy extends BaseProxy
 
     public function authByPassword($user, $pwd)
     {
+        return true;
     }
 
     public function authByPublicKey($user, $public_key_file, $private_key_file, $pwd)
     {
+        return true;
     }
 
     public function authByAgent($user)
     {
+        return true;
     }
 
     /**
