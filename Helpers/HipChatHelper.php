@@ -39,7 +39,7 @@ class HipChatHelper extends Helper {
         if(!in_array($color, $allowedColors)) throw new \Exception('HipChat helper, background color for message. One of "yellow", "red", "green", "purple", "gray", or "random"');
         
         $msg = nl2br($msg);
-        $this->getDeployer()->getLogger()->debug('[helperHipChat] send: "' . $msg . '"');
+        if(is_object($this->getDeployer())) $this->getDeployer()->getLogger()->debug('[helperHipChat] send: "' . $msg . '"');
         $encodedMsg = urlencode($msg);
         $ch = curl_init('https://api.hipchat.com/v1/rooms/message?auth_token=' . $helperConfig['token'] . '&format=json');
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
