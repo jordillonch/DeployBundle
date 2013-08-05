@@ -69,7 +69,7 @@ config:
     project: MyProject
     local_repository_dir: /tmp/deployer_local_repository
     vcs: git
-    clean_before_days: 7
+    clean_max_deploys: 10
     ssh:
         user: myuser
         public_key_file: '~/.ssh/id_rsa.pub'
