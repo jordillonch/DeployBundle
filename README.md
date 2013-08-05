@@ -95,8 +95,8 @@ jordi_llonch_deploy.config:
     clean_before_days: 7
     ssh:
         user: myuser
-        public_key_file: '~/.ssh/id_rsa.pub'
-        private_key_file: '~/.ssh/id_rsa'
+        public_key_file: '/home/myuser/.ssh/id_rsa.pub'
+        private_key_file: '/home/myuser/.ssh/id_rsa'
         private_key_file_pwd: 'mypassword'
 jordi_llonch_deploy.zones:
     prod_myproj:
@@ -323,8 +323,8 @@ jordi_llonch_deploy.config:
     sudo: true
     ssh:
         user: myuser
-        public_key_file: '~/.ssh/id_rsa.pub'
-        private_key_file: '~/.ssh/id_rsa'
+        public_key_file: '/home/myuser/.ssh/id_rsa.pub'
+        private_key_file: '/home/myuser/.ssh/id_rsa'
         private_key_file_pwd: 'mypassword'
 ```
 
@@ -375,8 +375,8 @@ ssh:
     proxy: cli
     user: jllonch
     password: 'mypassword'
-    public_key_file: '~/.ssh/id_rsa.pub'
-    private_key_file: '~/.ssh/id_rsa'
+    public_key_file: '/home/myuser/.ssh/id_rsa.pub'
+    private_key_file: '/home/myuser/.ssh/id_rsa'
     private_key_file_pwd: 'mykeypassword'
 ```
 
