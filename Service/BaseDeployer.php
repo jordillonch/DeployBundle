@@ -428,7 +428,7 @@ abstract class BaseDeployer implements DeployerInterface
 
                 // Copy code
                 if($host == 'localhost') $this->exec('cp -a "' . $newRepositoryDir . '" "' . $codeDir . '"');
-                else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i ' . $this->sshConfig['private_key_file'] . ' -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $newRepositoryDir . '" "' . $host . ':' . $codeDir . '"');
+                else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i \"' . $this->sshConfig['private_key_file'] . '\" -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $newRepositoryDir . '" "' . $host . ':' . $codeDir . '"');
             } catch (\Exception $e) {
                 throw $e;
             }
@@ -476,7 +476,7 @@ abstract class BaseDeployer implements DeployerInterface
             $directoryToCopy = $directoryList[$i];
             // Copy code
             if($host == 'localhost') $this->exec('cp -a "' . $directoryToCopy . '" "' . $codeDir . '"');
-            else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i ' . $this->sshConfig['private_key_file'] . ' -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $directoryToCopy . '" "' . $host . ':' . $codeDir . '"');
+            else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i \"' . $this->sshConfig['private_key_file'] . '\" -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $directoryToCopy . '" "' . $host . ':' . $codeDir . '"');
         }
     }
 
