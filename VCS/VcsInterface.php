@@ -25,6 +25,6 @@ interface VcsInterface {
     public function cloneCodeRepository();
     public function getDiffFiles($dirFrom, $dirTo);
     public function getLastVersionFromRemote();
-    public function pushLastDeployTag($pathVcs = null);
+    public function pushLastDeployTag($tag, $pathVcs = null);
     public function getHeadHash($pathVcs = null);
 }

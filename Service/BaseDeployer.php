@@ -864,7 +864,7 @@ abstract class BaseDeployer implements DeployerInterface
     {
         if(is_null($newRepositoryDir)) $this->vcs->setDestinationPath($this->getLocalNewRepositoryDir());
 
-        $this->vcs->pushLastDeployTag($newRepositoryDir);
+        $this->vcs->pushLastDeployTag($this->getTargetDeployLastTag(), $newRepositoryDir);
     }
 
     protected function getHeadHash($repositoryDir = null)

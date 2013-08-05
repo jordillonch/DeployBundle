@@ -108,13 +108,13 @@ class Git implements VcsInterface {
         return $hash;
     }
 
-    public function pushLastDeployTag($pathVcs = null)
+    public function pushLastDeployTag($tag, $pathVcs = null)
     {
         // Add tag
         if(is_null($pathVcs)) $pathVcs = $this->destinationPath;
         $headHash = $this->getHeadHash();
         $this->exec('git --git-dir="' . $pathVcs . '/.git" fetch --tags');
-        $this->exec('git --git-dir="' . $pathVcs . '/.git" tag -f "' . $this->getTargetDeployLastTag() . '" ' . $headHash);
+        $this->exec('git --git-dir="' . $pathVcs . '/.git" tag -f "' . $tag . '" ' . $headHash);
 
         // Delete tag
         $this->exec('git --git-dir="' . $pathVcs . '/.git" push --tags origin :refs/tags/' . $this->getTargetDeployLastTag());
