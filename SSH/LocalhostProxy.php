@@ -11,8 +11,6 @@
 
 namespace JordiLlonch\Bundle\DeployBundle\SSH;
 
-use Symfony\Component\Process\Process;
-
 class LocalhostProxy extends BaseProxy
 {
     public function connect($host, $port)
