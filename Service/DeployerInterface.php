@@ -24,7 +24,11 @@ interface DeployerInterface {
 
     public function setOutput(OutputInterface $output);
     public function setLogger(LoggerInterface $logger);
+
+    public function getCustom();
     public function getLogger();
+    public function getSshManager();
+    public function getVcs();
 
     public function initialize();
 

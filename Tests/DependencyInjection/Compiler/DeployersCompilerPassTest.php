@@ -49,4 +49,10 @@ class DeployersCompilerPassTest extends \PHPUnit_Framework_TestCase
 
         return $container;
     }
+
+    public function tearDown()
+    {
+        parent::tearDown();
+        $this->compiler = null;
+    }
 }

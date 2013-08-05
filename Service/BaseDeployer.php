@@ -60,9 +60,17 @@ abstract class BaseDeployer implements DeployerInterface
     protected $rollingBackFromVersion;
     protected $rollingBackToVersion;
     protected $zonesConfig;
+
+    /**
+     * @var SshManager
+     */
     protected $sshManager;
 
+    /**
+     * @var \JordiLlonch\Bundle\DeployBundle\Helpers\HelperSet
+     */
     protected $helperSet;
+
     /**
      * @var VcsInterface
      */
@@ -155,7 +163,7 @@ abstract class BaseDeployer implements DeployerInterface
         // Merge config
         $this->zonesConfig = $zonesConfig;
         $zoneConfig = $zonesConfig[$this->getZoneName()];
-        $config = \array_merge_recursive($generalConfig, $zoneConfig);
+        $config = \array_replace_recursive($generalConfig, $zoneConfig);
 
         // Check required parameters
         if (empty($config['project'])) throw new \Exception('Project name not defined in project config parameter.');
@@ -166,6 +174,8 @@ abstract class BaseDeployer implements DeployerInterface
         if (empty($config['checkout_branch'])) throw new \Exception('Checkout url not defined in default_checkout_branch or zone checkout_branch config parameter.');
         if (empty($config['repository_dir'])) throw new \Exception('Remote repository dir not defined in default_repository_dir or zone repository_dir config parameter.');
         if (empty($config['production_dir'])) throw new \Exception('Remote production dir not defined in default_repository_dir or zone production_dir config parameter.');
+        if (empty($config['vcs'])) throw new \Exception('VCS not defined in config parameters.');
+        if (empty($config['ssh'])) throw new \Exception('Ssh not defined in config parameters.');
 
         // Set config
         $this->project = $config['project'];
@@ -227,6 +237,30 @@ abstract class BaseDeployer implements DeployerInterface
         return $this->logger;
     }
 
+    /**
+     * @return \JordiLlonch\Bundle\DeployBundle\SSH\SshManager
+     */
+    public function getSshManager()
+    {
+        return $this->sshManager;
+    }
+
+    /**
+     * @return \JordiLlonch\Bundle\DeployBundle\VCS\VcsInterface
+     */
+    public function getVcs()
+    {
+        return $this->vcs;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getCustom()
+    {
+        return $this->custom;
+    }
+
     public function getOtherZoneConfig($zoneName, $parameterName)
     {
         if (!isset($this->zonesConfig[$zoneName])) throw new \Exception('Zone name does not exists.');
@@ -279,12 +313,12 @@ abstract class BaseDeployer implements DeployerInterface
 
     public function getLocalCodeDir()
     {
-        return $this->getLocalRepositoryDir() . '/' . $this->id . '/code';
+        return $this->getLocalRepositoryDir() . '/' . $this->getZoneName() . '/code';
     }
 
     public function getLocalDataDir()
     {
-        return $this->getLocalRepositoryDir() . '/' . $this->id . '/data';
+        return $this->getLocalRepositoryDir() . '/' . $this->getZoneName() . '/data';
     }
 
     public function getLocalDataCurrentVersionFile()
@@ -309,7 +343,7 @@ abstract class BaseDeployer implements DeployerInterface
 
     public function getRemoteRepositoryDir()
     {
-        return $this->remoteRepositoryDir . '/' . $this->id;
+        return $this->remoteRepositoryDir . '/' . $this->getZoneName();
     }
 
     public function getRemoteBinDir()
@@ -739,7 +773,7 @@ abstract class BaseDeployer implements DeployerInterface
     public function getStatus()
     {
         $r = array(
-            "id" => $this->id,
+            "id" => $this->getZoneName(),
             "current_version" => $this->currentVersion,
             "new_version" => $this->newVersion,
         );
@@ -771,7 +805,7 @@ abstract class BaseDeployer implements DeployerInterface
 
     protected function getTargetDeployLastTag()
     {
-        return 'deployer_last_' . $this->environment . '_' . $this->project . '_' . $this->id;
+        return 'deployer_last_' . $this->environment . '_' . $this->project . '_' . $this->getZoneName();
     }
 
     protected function extractConfigs($data)
