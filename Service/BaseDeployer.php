@@ -862,6 +862,8 @@ abstract class BaseDeployer implements DeployerInterface
      */
     protected function pushLastDeployTag($newRepositoryDir = null)
     {
+        if(is_null($newRepositoryDir)) $this->vcs->setDestinationPath($this->getLocalNewRepositoryDir());
+
         $this->vcs->pushLastDeployTag($newRepositoryDir);
     }
 
