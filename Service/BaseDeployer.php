@@ -696,7 +696,7 @@ abstract class BaseDeployer implements DeployerInterface
         $sudo = $this->sudo ? 'sudo ' : '';
         while(count($directoryList) > $this->cleanMaxDeploys) {
             $path = array_shift($directoryList);
-            $this->exec($sudo . 'rm -rf ' . $this->getLocalCodeDir() . '/' . $path);
+            $this->exec('rm -rf ' . $this->getLocalCodeDir() . '/' . $path);
             $this->execRemoteServers($sudo. 'rm -rf ' . $this->getRemoteCodeDir() . '/' . $path);
         }
     }
