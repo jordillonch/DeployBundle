@@ -402,6 +402,36 @@ abstract class BaseDeployer implements DeployerInterface
         return $this->sudo;
     }
 
+    /**
+     * @param $originPath
+     * @param $targetPath
+     * @param $rsyncParams
+     * @throws \Exception
+     */
+    public function rsync2Servers($originPath, $targetPath, $rsyncParams = '')
+    {
+        foreach ($this->urls as $server) {
+            try {
+                $this->rsync($originPath, $server, $targetPath, $rsyncParams);
+            } catch (\Exception $e) {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * @param $originPath
+     * @param $server
+     * @param $serverPath
+     * @param $rsyncParams
+     */
+    public function rsync($originPath, $server, $serverPath, $rsyncParams = '')
+    {
+        list($host, $port) = $this->extractHostPort($server);
+        if ($host == 'localhost') $this->exec('cp -a "' . $originPath . '" "' . $serverPath . '"');
+        else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i \"' . $this->sshConfig['private_key_file'] . '\" -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $originPath . '" "' . $host . ':' . $serverPath . '"');
+    }
+
     protected function downloadCodeVcs()
     {
         $this->logger->debug(__METHOD__);
@@ -419,20 +449,18 @@ abstract class BaseDeployer implements DeployerInterface
 
         $newRepositoryDir = $this->getLocalNewRepositoryDir();
         $codeDir = $this->getRemoteCodeDir();
+
+        // Check if it is a new server to copy some old version in order to be able to rollback
         foreach ($this->urls as $server) {
             try {
-                list($host, $port) = $this->extractHostPort($server);
-
-                // Check if it is a new server to copy some old version in order to be able to rollback
-                if($this->isNewServer($server)) $this->copyOldVersions($server, $this->numOldVersionsToCopy, $rsyncParams);
-
-                // Copy code
-                if($host == 'localhost') $this->exec('cp -a "' . $newRepositoryDir . '" "' . $codeDir . '"');
-                else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i \"' . $this->sshConfig['private_key_file'] . '\" -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $newRepositoryDir . '" "' . $host . ':' . $codeDir . '"');
+                if ($this->isNewServer($server)) $this->copyOldVersions($server, $this->numOldVersionsToCopy, $rsyncParams);
             } catch (\Exception $e) {
                 throw $e;
             }
         }
+
+        // Copy code to servers
+        $this->rsync2Servers($newRepositoryDir, $codeDir, $rsyncParams);
     }
 
     /**
