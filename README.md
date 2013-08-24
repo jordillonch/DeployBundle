@@ -663,7 +663,6 @@ helper:
 
 - Tests
 - Ssh with Process component
-- Abstract layer for VCS
 
 
 ## Author
