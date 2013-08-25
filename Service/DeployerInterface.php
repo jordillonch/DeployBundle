@@ -10,6 +10,7 @@
 
 namespace JordiLlonch\Bundle\DeployBundle\Service;
 
+use JordiLlonch\Bundle\DeployBundle\VCS\VcsInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Psr\Log\LoggerInterface;
 
@@ -24,10 +25,12 @@ interface DeployerInterface {
 
     public function setOutput(OutputInterface $output);
     public function setLogger(LoggerInterface $logger);
+    public function getLogger();
 
     public function getCustom();
-    public function getLogger();
+    public function setSshManager($sshManager);
     public function getSshManager();
+    public function setVcs(VcsInterface $vcs);
     public function getVcs();
 
     public function initialize();

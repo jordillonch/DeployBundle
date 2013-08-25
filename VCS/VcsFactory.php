@@ -29,6 +29,9 @@ class VcsFactory {
             case 'git':
                 $vcs = new Git($this->url, $this->branch, $this->isProxy, $this->dryMode);
                 break;
+            case 'fake':
+                $vcs = new Fake($this->url, $this->branch, $this->isProxy, $this->dryMode);
+                break;
             default:
                 throw new \Exception('VCS type: "' . $type . '" is not defined.');
         }

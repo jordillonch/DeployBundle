@@ -212,10 +212,10 @@ abstract class BaseDeployer implements DeployerInterface
 
         // vcs
         $vcsFactory = new VcsFactory($this->checkoutUrl, $this->checkoutBranch, $this->checkoutProxy, $this->dryMode);
-        $this->vcs = $vcsFactory->create($config['vcs']);
+        $this->setVcs($vcsFactory->create($config['vcs']));
 
         // ssh
-        $this->sshManager = new SshManager($config['ssh']);
+        $this->setSshManager(new SshManager($config['ssh']));
         $this->sshConfig = $config['ssh'];
 
         // After define config, set deployer for helpers because now there are helpers configs
@@ -248,11 +248,27 @@ abstract class BaseDeployer implements DeployerInterface
     }
 
     /**
+     * @param \JordiLlonch\Bundle\DeployBundle\SSH\SshManager $sshManager
+     */
+    public function setSshManager($sshManager)
+    {
+        $this->sshManager = $sshManager;
+    }
+
+    /**
      * @return \JordiLlonch\Bundle\DeployBundle\VCS\VcsInterface
      */
     public function getVcs()
     {
         return $this->vcs;
+    }
+
+    /**
+     * @param \JordiLlonch\Bundle\DeployBundle\VCS\VcsInterface $vcs
+     */
+    public function setVcs(VcsInterface $vcs)
+    {
+        $this->vcs = $vcs;
     }
 
     /**
@@ -278,9 +294,9 @@ abstract class BaseDeployer implements DeployerInterface
         $this->exec('mkdir -p "' . $this->getLocalCodeDir() . '"');
         $this->exec('mkdir -p "' . $this->getLocalDataDir() . '"');
         if (!is_dir($this->getLocalCodeDir()))
-            throw new \Exception("Repository directories do not exists: " . $this->getRemoteCodeDir());
+            throw new \Exception("Repository directories not exists: " . $this->getRemoteCodeDir());
         if (!is_dir($this->getLocalDataDir()))
-            throw new \Exception("Repository directories do not exists: " . $this->getDataDir());
+            throw new \Exception("Repository directories not exists: " . $this->getDataDir());
 
         // initialize remote repository directories if not exists
         $sudo = $this->sudo ? 'sudo ' : '';
@@ -551,6 +567,9 @@ abstract class BaseDeployer implements DeployerInterface
 
     public function runDownloadCode($newVersion)
     {
+        // Check if deployer has been initialized
+        if(!file_exists($this->getLocalRepositoryDir())) throw new \Exception('It seems deployer has not been initialized.');
+
         $vcsVersion = $this->vcs->getLastVersionFromRemote();
         $newVersion .= '_' . $vcsVersion;
 
@@ -583,14 +602,13 @@ abstract class BaseDeployer implements DeployerInterface
         $this->setNewVersionRollback();
     }
 
-    public function runCode2Production($newRepositoryDir = null, $new_version = null)
+    public function runCode2Production($newRepositoryDir = null)
     {
         $this->logger->debug(__METHOD__);
         $this->currentVersionRollback = $this->currentVersion;
         $this->remoteRepositoryDirRollback = $this->getRemoteCurrentRepositoryDir();
 
-        if ($newRepositoryDir == null) $newRepositoryDir = $this->getRemoteNewRepositoryDir();
-        if ($new_version == null) $new_version = $this->newVersion;
+        if (is_null($newRepositoryDir)) $newRepositoryDir = $this->getRemoteNewRepositoryDir();
 
         // update last version
         if (!$this->dryMode) {
@@ -926,7 +944,7 @@ abstract class BaseDeployer implements DeployerInterface
         foreach ($dir as $fileinfo) {
             if (!$fileinfo->isDot() && $fileinfo->isDir()) // also check if directory is the current one
             {
-                $arrListDir[$fileinfo->getCTime()] = $fileinfo->__toString();
+                $arrListDir[$fileinfo->__toString()] = $fileinfo->__toString();
             }
         }
 

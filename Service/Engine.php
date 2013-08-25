@@ -146,12 +146,12 @@ class Engine
         $this->logger->debug('[Download]');
 
         // create new version
-        $new_version = date("Ymd_His");
+        $newVersion = date("Ymd_His");
         $funcRollback = function(BaseDeployer $zone, $dryMode) {
             $zone->runDownloadCodeRollback();
             if (!$dryMode) $zone->setNewVersionRollback();
         };
-        $this->call('runDownloadCode', array($new_version), $funcRollback);
+        $this->call('runDownloadCode', array($newVersion), $funcRollback);
     }
 
     /**

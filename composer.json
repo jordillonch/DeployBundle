@@ -16,7 +16,7 @@
     },
     "require-dev":{
         "symfony/symfony": "2.3.*",
-        "mockery/mockery": "dev-master#1a1a222",
+        "mockery/mockery": "dev-master@dev",
         "guzzle/guzzle":   "3.4.*@dev",
         "phpunit/phpunit": "3.7.*"
     },

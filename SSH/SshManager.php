@@ -31,6 +31,9 @@ class SshManager {
                 case 'pecl':
                     $proxy = new PeclSsh2Proxy();
                     break;
+                case 'local':
+                    $proxy = new LocalhostProxy();
+                    break;
             }
         }
 
