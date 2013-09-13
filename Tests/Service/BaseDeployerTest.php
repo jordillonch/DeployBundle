@@ -37,6 +37,7 @@ class BaseDeployerTest extends \PHPUnit_Framework_TestCase
             'checkout_branch' => 'master',
             'repository_dir' => '/tmp/test_deploy_bundle/remote/var/www/repo1',
             'production_dir' => '/tmp/test_deploy_bundle/remote/var/www/code1',
+            'clean_max_deploys' => 2,
             'ssh' => array(
                 'proxy' => 'local',
                 'user' => 'myuser',
@@ -79,16 +80,31 @@ class BaseDeployerTest extends \PHPUnit_Framework_TestCase
 
     public function testConfig()
     {
+        $this->fakeDeployer->initialize();
+        $this->fakeDeployer->setCurrentVersion('20130101_000000_LAST_VERSION_HASH');
+        $this->fakeDeployer->setNewVersion('20130102_000000_LAST_VERSION_HASH');
         $this->assertSame('test_zone', $this->fakeDeployer->getZoneName());
         $this->assertSame('prod', $this->fakeDeployer->getEnvironment());
         $this->assertSame('/tmp/test_deploy_bundle/local_repo', $this->fakeDeployer->getLocalRepositoryDir());
+        $this->assertSame('/tmp/test_deploy_bundle/local_repo/test_zone/code', $this->fakeDeployer->getLocalCodeDir());
+        $this->assertSame('/tmp/test_deploy_bundle/local_repo/test_zone/data', $this->fakeDeployer->getLocalDataDir());
+        $this->assertSame('/tmp/test_deploy_bundle/local_repo/test_zone/data/current_version', $this->fakeDeployer->getLocalDataCurrentVersionFile());
+        $this->assertSame('/tmp/test_deploy_bundle/local_repo/test_zone/data/new_version', $this->fakeDeployer->getLocalDataNewVersionFile());
+        $this->assertSame('/tmp/test_deploy_bundle/local_repo/test_zone/code/20130102_000000_LAST_VERSION_HASH', $this->fakeDeployer->getLocalNewRepositoryDir());
+        $this->assertSame('/tmp/test_deploy_bundle/local_repo/test_zone/code/20130101_000000_LAST_VERSION_HASH', $this->fakeDeployer->getLocalCurrentCodeDir());
+        $this->assertSame('/tmp/test_deploy_bundle/remote/var/www/repo2/test_zone/shared_code', $this->fakeDeployer->getRemoteSharedDir());
+        $this->assertSame('/tmp/test_deploy_bundle/remote/var/www/repo2/test_zone/code', $this->fakeDeployer->getRemoteCodeDir());
+        $this->assertSame('/tmp/test_deploy_bundle/remote/var/www/repo2/test_zone/code/20130101_000000_LAST_VERSION_HASH', $this->fakeDeployer->getRemoteCurrentRepositoryDir());
+        $this->assertSame('/tmp/test_deploy_bundle/remote/var/www/repo2/test_zone/code/20130102_000000_LAST_VERSION_HASH', $this->fakeDeployer->getRemoteNewRepositoryDir());
         $this->assertSame('/tmp/test_deploy_bundle/remote/var/www/code2', $this->fakeDeployer->getRemoteProductionCodeDir());
         $this->assertSame('/tmp/test_deploy_bundle/remote/var/www/repo2/' . $this->fakeDeployer->getZoneName(), $this->fakeDeployer->getRemoteRepositoryDir());
         $this->assertSame('bar2', $this->fakeDeployer->getHelpersConfig()['test']['foo']);
         $this->assertSame('123', $this->fakeDeployer->getCustom()['test_c']['abc']);
         $this->assertSame('789', $this->fakeDeployer->getCustom()['test_c']['def']);
-        $this->assertNull($this->fakeDeployer->getStatus()['current_version']);
-        $this->assertNull($this->fakeDeployer->getStatus()['new_version']);
+        $this->assertSame('20130101_000000_LAST_VERSION_HASH', $this->fakeDeployer->getStatus()['current_version']);
+        $this->assertSame('20130102_000000_LAST_VERSION_HASH', $this->fakeDeployer->getStatus()['new_version']);
+        $this->assertSame('prod', $this->fakeDeployer->getEnvironment());
+        $this->assertFalse($this->fakeDeployer->getSudo());
         $this->assertInstanceOf('\JordiLlonch\Bundle\DeployBundle\SSH\SshManager', $this->fakeDeployer->getSshManager());
         $this->assertInstanceOf('\JordiLlonch\Bundle\DeployBundle\VCS\VcsInterface', $this->fakeDeployer->getVcs());
         $this->assertInstanceOf('\JordiLlonch\Bundle\DeployBundle\Helpers\HelperSet', $this->fakeDeployer->getHelperSet());
@@ -242,6 +258,70 @@ class BaseDeployerTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('20130102_000000_LAST_VERSION_HASH', $this->fakeDeployer->getStatus()['new_version']);
         $this->assertSame('/tmp/test_deploy_bundle/remote/var/www/repo2/test_zone/code/20130101_000000_LAST_VERSION_HASH', readlink('/tmp/test_deploy_bundle/remote/var/www/code2'));
     }
+
+    public function testSetZoneName()
+    {
+        $this->fakeDeployer->setZoneName('zone_a');
+        $this->assertSame('zone_a', $this->fakeDeployer->getZoneName());
+    }
+
+    /**
+     * @expectedException        Exception
+     * @expectedExceptionMessage Bad zone name. Only lower case characters and numbers are accepted.
+     */
+    public function testSetZoneNameBadZoneNameException()
+    {
+        $this->fakeDeployer->setZoneName('INVALID');
+    }
+
+    /**
+     * @expectedException        Exception
+     * @expectedExceptionMessage Bad zone name. Only lower case characters and numbers are accepted.
+     */
+    public function testSetZoneNameBadZoneNameException2()
+    {
+        $this->fakeDeployer->setZoneName('invalid name');
+    }
+
+    public function testRsync2Servers()
+    {
+        $this->fakeDeployer->shouldReceive('rsync')->with('orig_path', 'server1', 'target_path', '')->once();
+        $this->fakeDeployer->shouldReceive('rsync')->with('orig_path', 'server2', 'target_path', '')->once();
+        $this->fakeDeployer->rsync2Servers('orig_path', 'target_path');
+    }
+
+    public function testCode2Servers()
+    {
+        $this->fakeDeployer->initialize();
+        $this->fakeDeployer->setNewVersion('20130102_000000_LAST_VERSION_HASH');
+        $this->fakeDeployer->shouldReceive('isNewServer')->andReturn(true)->twice();
+        $this->fakeDeployer->shouldReceive('copyOldVersions')->andReturn(true)->twice();
+        $this->fakeDeployer->shouldReceive('rsync2Servers')->with('/tmp/test_deploy_bundle/local_repo/test_zone/code/20130102_000000_LAST_VERSION_HASH', '/tmp/test_deploy_bundle/remote/var/www/repo2/test_zone/code', '');
+
+        $this->fakeDeployer->code2Servers();
+    }
+
+    public function testClean()
+    {
+        $this->fakeDeployer->initialize();
+        mkdir($this->fakeDeployer->getLocalCodeDir() . '/20130101_000000_LAST_VERSION_HASH');
+        mkdir($this->fakeDeployer->getLocalCodeDir() . '/20130102_000000_LAST_VERSION_HASH');
+        mkdir($this->fakeDeployer->getLocalCodeDir() . '/20130103_000000_LAST_VERSION_HASH');
+        mkdir($this->fakeDeployer->getLocalCodeDir() . '/20130104_000000_LAST_VERSION_HASH');
+        mkdir($this->fakeDeployer->getLocalCodeDir() . '/20130105_000000_LAST_VERSION_HASH');
+
+        $this->fakeDeployer->shouldReceive('exec')->times(3)->passthru();
+        $this->fakeDeployer->shouldReceive('execRemoteServers')->times(3);
+
+        $this->fakeDeployer->clean();
+
+        $this->assertFileNotExists($this->fakeDeployer->getLocalCodeDir() . '/20130101_000000_LAST_VERSION_HASH');
+        $this->assertFileNotExists($this->fakeDeployer->getLocalCodeDir() . '/20130102_000000_LAST_VERSION_HASH');
+        $this->assertFileNotExists($this->fakeDeployer->getLocalCodeDir() . '/20130103_000000_LAST_VERSION_HASH');
+        $this->assertFileExists($this->fakeDeployer->getLocalCodeDir() . '/20130104_000000_LAST_VERSION_HASH');
+        $this->assertFileExists($this->fakeDeployer->getLocalCodeDir() . '/20130105_000000_LAST_VERSION_HASH');
+    }
+
 
     protected function tearDown()
     {

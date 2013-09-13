@@ -48,6 +48,8 @@ interface DeployerInterface {
     public function execRemoteServers($command, $urls = null);
     public function rsync($originPath, $server, $serverPath, $rsyncParams = '');
     public function rsync2Servers($originPath, $targetPath, $rsyncParams = '');
+    public function isNewServer($server);
+    public function copyOldVersions($server, $numOldVersionsToCopy = 3, $rsyncParams = '');
 
     // Local paths
     public function getLocalRepositoryDir();

@@ -151,7 +151,7 @@ class Engine
             $zone->runDownloadCodeRollback();
             if (!$dryMode) $zone->setNewVersionRollback();
         };
-        $this->call('runDownloadCode', array($newVersion), $funcRollback);
+        return $this->call('runDownloadCode', array($newVersion), $funcRollback);
     }
 
     /**
@@ -164,7 +164,7 @@ class Engine
         $funcRollback = function(BaseDeployer $zone, $dryMode) {
           if(!$dryMode) $zone->runCode2ProductionRollback();
         };
-        $this->call('runCode2Production', array(), $funcRollback);
+        return $this->call('runCode2Production', array(), $funcRollback);
     }
 
     /**
@@ -198,19 +198,20 @@ class Engine
         if(!is_null($this->silent)) $silent = $this->silent;
         if(is_null($silent)) $silent = false;
 
+        $response = array();
         try
         {
-            $response = array();
             foreach($this->zoneManager->getZonesNames() as $zone)
             {
                 if(!$silent) $this->output->writeln('<info>[' . $zone . ']</info>');
                 $response[$zone] = call_user_func_array(array($this->zoneManager->getZone($zone), $name), $arguments);
             }
-
-            return $response;
         }
         catch (\Exception $e)
         {
+            // Log error
+            $this->logger->critical($e->getMessage());
+
             foreach($this->zoneManager->getZonesNames() as $zone)
             {
                 if(!$silent) $this->output->writeln('<error>ROLLBACK [' . $zone . ']</error>');
@@ -219,13 +220,19 @@ class Engine
                     $zoneObj = $this->zoneManager->getZone($zone);
                     $lambdaRollback($zoneObj, $this->dryMode);
                 }
-                catch (\Exception $e) {}
+                catch (\Exception $e) {
+                    // Log error
+                    $this->logger->critical($e->getMessage());
+                }
 
+                $response[$zone] = false;
             }
 
             // Log error
-            $this->logger->crit($e->getMessage());
+            $this->logger->critical($e->getMessage());
         }
+
+        return $response;
     }
 
     public function getZonesNames()

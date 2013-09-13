@@ -150,7 +150,6 @@ abstract class BaseDeployer implements DeployerInterface
         ) {
             throw new \Exception('Bad zone name. Only lower case characters and numbers are accepted.');
         }
-//        $this->id = strtolower( preg_replace( array( '/[^-a-zA-Z0-9\s]/', '/[\s]/' ), array( '', '-' ), $name ) );
         $this->id = $name;
     }
 
@@ -484,7 +483,7 @@ abstract class BaseDeployer implements DeployerInterface
      *
      * @param $server
      */
-    protected function isNewServer($server)
+    public function isNewServer($server)
     {
         $r = $this->execRemoteServers('ls ' . $this->getRemoteCodeDir(), array($server));
 
@@ -499,7 +498,7 @@ abstract class BaseDeployer implements DeployerInterface
      * @param $server
      * @param int $numOldVersionsToCopy
      */
-    protected function copyOldVersions($server, $numOldVersionsToCopy = 3, $rsyncParams = '')
+    public function copyOldVersions($server, $numOldVersionsToCopy = 3, $rsyncParams = '')
     {
         $this->logger->debug(__METHOD__);
 
