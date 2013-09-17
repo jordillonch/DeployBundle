@@ -628,7 +628,7 @@ For now only provides a method to do a cache warm up.
 
 #### GitHub
 
-Useful methods to has feedback of your deploy in GitHub.
+Useful methods to have feedback of your deploy in GitHub.
 
 `$this->getHelper('github')->getCompareUrl($gitUidFrom, $gitUidTo)`
 
