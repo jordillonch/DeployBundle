@@ -35,6 +35,8 @@ class SshManager {
                     $proxy = new LocalhostProxy();
                     break;
             }
+        } else {
+            $proxy = new PeclSsh2Proxy();
         }
 
         $this->proxy = $proxy;
