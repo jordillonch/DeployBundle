@@ -88,27 +88,28 @@ new JordiLlonch\Bundle\DeployBundle\JordiLlonchDeployBundle(),
 ### Configure general settings and a zone
 
 ```
-jordi_llonch_deploy.config:
-    project: MyProject
-    vcs: git
-    local_repository_dir: /home/deploy/local_repository
-    clean_max_deploys: 7
-    ssh:
-        user: myuser
-        public_key_file: '/home/myuser/.ssh/id_rsa.pub'
-        private_key_file: '/home/myuser/.ssh/id_rsa'
-        private_key_file_pwd: 'mypassword'
-jordi_llonch_deploy.zones:
-    prod_myproj:
-        deployer: myproj
-        environment: prod
-        urls:
-            - deploy@testserver1:8822
-            - deploy@testserver2:8822
-        checkout_url: 'git@github.com:myrepo/myproj.git'
-        checkout_branch: master
-        repository_dir: /var/www/production/myproj/deploy
-        production_dir: /var/www/production/myproj/code
+jordi_llonch_deploy:
+    config:
+        project: MyProject
+        vcs: git
+        local_repository_dir: /home/deploy/local_repository
+        clean_max_deploys: 7
+        ssh:
+            user: myuser
+            public_key_file: '/home/myuser/.ssh/id_rsa.pub'
+            private_key_file: '/home/myuser/.ssh/id_rsa'
+            private_key_file_pwd: 'mypassword'
+    zones:
+        prod_myproj:
+            deployer: myproj
+            environment: prod
+            urls:
+                - deploy@testserver1:8822
+                - deploy@testserver2:8822
+            checkout_url: 'git@github.com:myrepo/myproj.git'
+            checkout_branch: master
+            repository_dir: /var/www/production/myproj/deploy
+            production_dir: /var/www/production/myproj/code
 ```
 
 
@@ -315,17 +316,18 @@ You must set general configurations and zones.
 ### General configuration
 
 ```
-jordi_llonch_deploy.config:
-    project: MyProject
-    vcs: git
-    local_repository_dir: /home/deploy/deploy_repository
-    clean_max_deploys: 7
-    sudo: true
-    ssh:
-        user: myuser
-        public_key_file: '/home/myuser/.ssh/id_rsa.pub'
-        private_key_file: '/home/myuser/.ssh/id_rsa'
-        private_key_file_pwd: 'mypassword'
+jordi_llonch_deploy:
+    config:
+        project: MyProject
+        vcs: git
+        local_repository_dir: /home/deploy/deploy_repository
+        clean_max_deploys: 7
+        sudo: true
+        ssh:
+            user: myuser
+            public_key_file: '/home/myuser/.ssh/id_rsa.pub'
+            private_key_file: '/home/myuser/.ssh/id_rsa'
+            private_key_file_pwd: 'mypassword'
 ```
 
 #### project
@@ -422,21 +424,23 @@ Helper parameters that can be get in your deploy class.
 You need to set a minimum of one zone. Here is created your zone `prod_myproj`: 
 
 ```
-jordi_llonch_deploy.zones:
-    prod_myproj:
-        deployer: myproj
-        environment: prod
-        urls:
-            - deploy@testserver1:8822
-            - deploy@testserver2:8822
-        checkout_url: 'git@github.com:myrepo/myproj.git'
-        checkout_branch: master
-        checkout_proxy: true
-        repository_dir: /var/www/production/myproj/deploy
-        production_dir: /var/www/production/myproj/code
-        custom:
-            my_key1: value1
-            my_key2: value2
+jordi_llonch_deploy:
+...
+    zones:
+        prod_myproj:
+            deployer: myproj
+            environment: prod
+            urls:
+                - deploy@testserver1:8822
+                - deploy@testserver2:8822
+            checkout_url: 'git@github.com:myrepo/myproj.git'
+            checkout_branch: master
+            checkout_proxy: true
+            repository_dir: /var/www/production/myproj/deploy
+            production_dir: /var/www/production/myproj/code
+            custom:
+                my_key1: value1
+                my_key2: value2
 ```
 
 #### deployer
@@ -624,7 +628,7 @@ For now only provides a method to do a cache warm up.
 
 #### GitHub
 
-Useful methods to has feedback of your deploy in GitHub.
+Useful methods to have feedback of your deploy in GitHub.
 
 `$this->getHelper('github')->getCompareUrl($gitUidFrom, $gitUidTo)`
 
