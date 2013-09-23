@@ -1,4 +1,3 @@
-.idea
 Tests/Functional/cache/*
 Tests/Functional/logs/*
 tests/log
