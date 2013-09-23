@@ -35,6 +35,14 @@ class SshManager {
                     $proxy = new LocalhostProxy();
                     break;
             }
+        } else {
+            if(extension_loaded ('php-ssh2'))
+            {
+                $proxy = new PeclSsh2Proxy();
+            } else {
+                $proxy = new CLISshProxy();
+            }
+
         }
 
         $this->proxy = $proxy;
