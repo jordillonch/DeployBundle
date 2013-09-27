@@ -26,6 +26,8 @@ class JordiLlonchDeployContainerTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->container = new ContainerBuilder();
+        $this->container->setParameter('kernel.root_dir', '/tmp/app');
+
         //load configuration on extension
         $config = Yaml::parse($this->getBundleConfig());
         $extension = new JordiLlonchDeployExtension();
@@ -44,8 +46,8 @@ class JordiLlonchDeployContainerTest extends \PHPUnit_Framework_TestCase
 
     public function testEngineAfterCompilerPass()
     {
-        $this->assertTrue($this->container->hasParameter('jordi_llonch_deploy.config'));
-        $this->assertTrue($this->container->hasParameter('jordi_llonch_deploy.zones'));
+        $this->assertTrue($this->container->hasParameter('jordi_llonch_deploy.configured.config'));
+        $this->assertTrue($this->container->hasParameter('jordi_llonch_deploy.configured.zones'));
         $this->assertTrue($this->container->has('jordillonch_deployer.engine'));
     }
 
@@ -64,11 +66,20 @@ class JordiLlonchDeployContainerTest extends \PHPUnit_Framework_TestCase
 
     protected function getBundleConfig()
     {
+        $zonesServers = <<<'EOF'
+test:
+    urls:
+        - jllonch@testserver1
+EOF;
+        mkdir('/tmp/app', 0777);
+        file_put_contents('/tmp/app/parameters_deployer_servers.yml', $zonesServers);
+
         return <<<'EOF'
 config:
     project: MyProject
     local_repository_dir: /tmp/deployer_local_repository
     vcs: git
+    servers_parameter_file: app/parameters_deployer_servers.yml
     clean_max_deploys: 10
     ssh:
         user: myuser
@@ -78,8 +89,6 @@ zones:
     test:
         deployer: test
         environment: prod
-        urls:
-            - jllonch@testserver1
         checkout_url: 'git@github.com:jordillonch/JordiLlonchDeployBundle.git'
         checkout_branch: master
         repository_dir: /var/www/production/test/deploy
@@ -91,5 +100,6 @@ EOF;
     {
         parent::tearDown();
         $this->container = null;
+        exec('rm -rf /tmp/app');
     }
 }

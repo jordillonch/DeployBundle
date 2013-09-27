@@ -87,11 +87,14 @@ new JordiLlonch\Bundle\DeployBundle\JordiLlonchDeployBundle(),
 
 ### Configure general settings and a zone
 
+`app/config/parameters.yml`
+
 ```
 jordi_llonch_deploy:
     config:
         project: MyProject
         vcs: git
+        servers_parameter_file: app/config/parameters_deployer_servers.yml
         local_repository_dir: /home/deploy/local_repository
         clean_max_deploys: 7
         ssh:
@@ -103,14 +106,22 @@ jordi_llonch_deploy:
         prod_myproj:
             deployer: myproj
             environment: prod
-            urls:
-                - deploy@testserver1:8822
-                - deploy@testserver2:8822
             checkout_url: 'git@github.com:myrepo/myproj.git'
             checkout_branch: master
             repository_dir: /var/www/production/myproj/deploy
             production_dir: /var/www/production/myproj/code
 ```
+
+`app/config/parameters_deployer_servers.yml`
+
+```
+prod_myproj:
+    urls:
+        - deploy@testserver1:8822
+        - deploy@testserver2:8822
+```
+
+* Note: Servers urls are in other file (`parameters_deployers_servers.yml`) because this file contains a dynamic configuration that would be changed in a scalable environment like AWS.
 
 
 ### Create a deploy class to myproj
@@ -241,6 +252,16 @@ app/console deployer:code2production --zones=[zone1,zone2...]
 ```
 
 
+### syncronize
+
+Ensure that all downloaded versions of code are copied to all servers.
+Useful when you add a new server to a zone. If you not syncronize the new server the rollback operation will break the code in the new server.
+
+```
+app/console deployer:syncronize --zones=prod_myproj
+```
+
+
 ### rollback
 
 If there is any problem and you need to roll back to a previous version you have two options:
@@ -315,6 +336,8 @@ You must set general configurations and zones.
 
 ### General configuration
 
+`app/config/parameters.yml`
+
 ```
 jordi_llonch_deploy:
     config:
@@ -343,6 +366,13 @@ Mail from.
 #### mail_to
 
 Mail to send emails about deployments. It is an array.
+
+
+#### servers_parameter_file
+
+Path where the servers parameters file is. A common configuration could be `app/config/parameters_deployer_servers.yml`.
+
+Servers urls are in this file because it contains a dynamic configuration that would be changed in a scalable environment like AWS by some script.
 
 
 #### local_repository_dir
@@ -423,6 +453,8 @@ Helper parameters that can be get in your deploy class.
 
 You need to set a minimum of one zone. Here is created your zone `prod_myproj`: 
 
+`app/config/parameters.yml`
+
 ```
 jordi_llonch_deploy:
 ...
@@ -430,9 +462,6 @@ jordi_llonch_deploy:
         prod_myproj:
             deployer: myproj
             environment: prod
-            urls:
-                - deploy@testserver1:8822
-                - deploy@testserver2:8822
             checkout_url: 'git@github.com:myrepo/myproj.git'
             checkout_branch: master
             checkout_proxy: true
@@ -441,6 +470,15 @@ jordi_llonch_deploy:
             custom:
                 my_key1: value1
                 my_key2: value2
+```
+
+`app/config/parameters_deployer_servers.yml`
+
+```
+prod_myproj:
+    urls:
+        - deploy@testserver1:8822
+        - deploy@testserver2:8822
 ```
 
 #### deployer

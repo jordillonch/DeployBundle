@@ -26,8 +26,8 @@ class DeployersCompilerPass implements CompilerPassInterface
      */
     public function process(ContainerBuilder $container)
     {
-        $generalConfig = $container->getParameter('jordi_llonch_deploy.config');
-        $zonesConfig = $container->getParameter('jordi_llonch_deploy.zones');
+        $generalConfig = $container->getParameter('jordi_llonch_deploy.configured.config');
+        $zonesConfig = $container->getParameter('jordi_llonch_deploy.configured.zones');
         if (empty($zonesConfig)) {
             throw new \Exception("Configure jordi_llonch_deploy zones on config.yml", 1);
         }

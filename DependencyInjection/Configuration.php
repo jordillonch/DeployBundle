@@ -41,6 +41,8 @@ class Configuration implements ConfigurationInterface
                             ->enumNode('vcs')
                                 ->values(array('', 'git'))
                             ->end()
+                            ->scalarNode('servers_parameter_file')->isRequired()
+                            ->end()
                             ->scalarNode('local_repository_dir')->isRequired()
                             ->end()
                             ->scalarNode('clean_max_deploys')

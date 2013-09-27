@@ -46,7 +46,6 @@ abstract class BaseDeployer implements DeployerInterface
     protected $currentVersion;
     protected $output;
     protected $sudo = false;
-    protected $numOldVersionsToCopy = 3;
     protected $custom;
     protected $helpersConfig;
     protected $newVersionRollback;
@@ -447,6 +446,22 @@ abstract class BaseDeployer implements DeployerInterface
         else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i \"' . $this->sshConfig['private_key_file'] . '\" -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $originPath . '" "' . $host . ':' . $serverPath . '"');
     }
 
+    /**
+     * @param $rsyncParams
+     * @throws \Exception
+     */
+    public function syncronize($rsyncParams = '')
+    {
+        // Check if it is a new server to copy some old version in order to be able to rollback
+        foreach ($this->urls as $server) {
+            try {
+                $this->syncronizeServer($server, $rsyncParams);
+            } catch (\Exception $e) {
+                throw $e;
+            }
+        }
+    }
+
     protected function downloadCodeVcs()
     {
         $this->logger->debug(__METHOD__);
@@ -462,33 +477,7 @@ abstract class BaseDeployer implements DeployerInterface
     {
         $this->logger->debug(__METHOD__);
 
-        $newRepositoryDir = $this->getLocalNewRepositoryDir();
-        $codeDir = $this->getRemoteCodeDir();
-
-        // Check if it is a new server to copy some old version in order to be able to rollback
-        foreach ($this->urls as $server) {
-            try {
-                if ($this->isNewServer($server)) $this->copyOldVersions($server, $this->numOldVersionsToCopy, $rsyncParams);
-            } catch (\Exception $e) {
-                throw $e;
-            }
-        }
-
-        // Copy code to servers
-        $this->rsync2Servers($newRepositoryDir, $codeDir, $rsyncParams);
-    }
-
-    /**
-     * Check if it is a new server looking how many downloaded version there is
-     *
-     * @param $server
-     */
-    public function isNewServer($server)
-    {
-        $r = $this->execRemoteServers('ls ' . $this->getRemoteCodeDir(), array($server));
-
-        if(empty($r[$server]['output'])) return true;
-        else return false;
+        $this->syncronize($rsyncParams);
     }
 
     /**
@@ -496,30 +485,29 @@ abstract class BaseDeployer implements DeployerInterface
      * (discard the last version because it is version that it is downloaded and copied by code2Servers method)
      *
      * @param $server
-     * @param int $numOldVersionsToCopy
      */
-    public function copyOldVersions($server, $numOldVersionsToCopy = 3, $rsyncParams = '')
+    public function syncronizeServer($server, $rsyncParams = '')
     {
         $this->logger->debug(__METHOD__);
 
-        // Find all versions code sorted by name (oldest first)
+        // Find all versions code in local
         $finder = new Finder();
         $finder->in($this->getLocalCodeDir());
         $finder->directories();
         $finder->sortByName();
         $finder->depth(0);
-        $directoryList = array();
-        foreach ($finder as $file) $directoryList[] = $file->getRealPath();
+        $listLocalCodeDir = array();
+        foreach ($finder as $file) $listLocalCodeDir[$file->getBasename()] = $file->getRealPath();
 
-        // Copy N versions to servers
-        $codeDir = $this->getRemoteCodeDir();
-        list($host, $port) = $this->extractHostPort($server);
-        $c = count($directoryList);
-        for($i=$c-2; $i>=0 && $i>=$c-1-$numOldVersionsToCopy; $i--) {
-            $directoryToCopy = $directoryList[$i];
-            // Copy code
-            if($host == 'localhost') $this->exec('cp -a "' . $directoryToCopy . '" "' . $codeDir . '"');
-            else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i \"' . $this->sshConfig['private_key_file'] . '\" -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $directoryToCopy . '" "' . $host . ':' . $codeDir . '"');
+        // Find all versions code in remote server
+        $r = $this->execRemoteServers('ls ' . $this->getRemoteCodeDir(), array($server));
+        $listRemoteCodeDir = explode("\n", $r[$server]['output']);
+
+        // Sync
+        foreach ($listLocalCodeDir as $basename => $realPath) {
+            if(!in_array($basename, $listRemoteCodeDir)) {
+                $this->rsync2Servers($realPath, $this->getRemoteCodeDir(), $rsyncParams);
+            }
         }
     }
 
@@ -958,4 +946,5 @@ abstract class BaseDeployer implements DeployerInterface
 
         return $arrListDir;
     }
+
 }

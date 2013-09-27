@@ -40,16 +40,13 @@ interface DeployerInterface {
     public function code2ProductionAfter();
     public function code2ProductionAfterRollback();
 
-
-
     public function downloadCode();
     public function downloadCodeRollback();
     public function exec($command, &$output = null);
     public function execRemoteServers($command, $urls = null);
     public function rsync($originPath, $server, $serverPath, $rsyncParams = '');
     public function rsync2Servers($originPath, $targetPath, $rsyncParams = '');
-    public function isNewServer($server);
-    public function copyOldVersions($server, $numOldVersionsToCopy = 3, $rsyncParams = '');
+    public function syncronize($rsyncParams = '');
 
     // Local paths
     public function getLocalRepositoryDir();
