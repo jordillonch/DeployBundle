@@ -23,6 +23,7 @@ class JordiLlonchDeployExtensionTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->container = new ContainerBuilder();
+        $this->container->setParameter('kernel.root_dir', '/tmp/app');
         $config = Yaml::parse($this->getBundleConfig());
         $this->extension = new JordiLlonchDeployExtension();
         $this->extension->load(array($config), $this->container);
@@ -35,10 +36,19 @@ class JordiLlonchDeployExtensionTest extends \PHPUnit_Framework_TestCase
 
     protected function getBundleConfig()
     {
+        $zonesServers = <<<'EOF'
+test:
+    urls:
+        - jllonch@testserver1
+EOF;
+        mkdir('/tmp/app', 0777);
+        file_put_contents('/tmp/app/parameters_deployer_servers.yml', $zonesServers);
+
         return <<<'EOF'
 config:
     project: MyProject
     vcs: git
+    servers_parameter_file: app/parameters_deployer_servers.yml
     local_repository_dir: /tmp/deployer_local_repository
     clean_max_deploys: 10
     ssh:
@@ -63,5 +73,6 @@ EOF;
         parent::tearDown();
         $this->container = null;
         $this->extension = null;
+        exec('rm -rf /tmp/app');
     }
 }

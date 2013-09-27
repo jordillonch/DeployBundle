@@ -22,7 +22,6 @@ class Configure
     protected $path;
     protected $parameters;
     protected $parametersInit;
-    protected $zones;
 
     const OUTPUT_YML = 0;
     const OUTPUT_JSON = 1;
@@ -36,7 +35,6 @@ class Configure
         $yml = file_get_contents($this->path);
         $this->parameters = Yaml::parse($yml);
         $this->parametersInit = $this->parameters;
-        $this->zones = $this->parameters['parameters']['jordi_llonch_deploy.zones'];
     }
 
     /**
@@ -44,8 +42,6 @@ class Configure
      */
     public function writeParametersFile()
     {
-        $this->parameters['parameters']['jordi_llonch_deploy.zones'] = $this->zones;
-
         // Only write if are modifications
         if($this->parameters == $this->parametersInit) return;
 
@@ -61,7 +57,7 @@ class Configure
     {
         $this->checkZone($zone);
         $url = $this->sanitizeUrl($url);
-        $this->zones[$zone]['urls'] = $url;
+        $this->parameters[$zone]['urls'] = $url;
     }
 
     /**
@@ -72,9 +68,9 @@ class Configure
     {
         $this->checkZone($zone);
         $url = $this->sanitizeUrl($url);
-        $url = array_merge($this->zones[$zone]['urls'], $url);
+        $url = array_merge($this->parameters[$zone]['urls'], $url);
         $url = array_unique($url);
-        $this->zones[$zone]['urls'] = $url;
+        $this->parameters[$zone]['urls'] = $url;
     }
 
     /**
@@ -85,11 +81,11 @@ class Configure
     {
         $this->checkZone($zone);
         $url = $this->sanitizeUrl($url);
-        $currentUrls = $this->zones[$zone]['urls'];
+        $currentUrls = $this->parameters[$zone]['urls'];
         $newUrls = array_values(array_filter($currentUrls, function($item) use($url) {
            return !in_array($item, $url);
         }));
-        $this->zones[$zone]['urls'] = $newUrls;
+        $this->parameters[$zone]['urls'] = $newUrls;
     }
 
     /**
@@ -103,10 +99,10 @@ class Configure
         switch($format)
         {
             case self::OUTPUT_JSON:
-                $output = json_encode($this->zones[$zone]['urls']);
+                $output = json_encode($this->parameters[$zone]['urls']);
                 break;
             case self::OUTPUT_YML:
-                $output = Yaml::dump($this->zones[$zone]['urls']);
+                $output = Yaml::dump($this->parameters[$zone]['urls']);
                 break;
         }
 
@@ -119,7 +115,7 @@ class Configure
      */
     protected function existsZone($zone)
     {
-        return isset($this->zones[$zone]);
+        return isset($this->parameters[$zone]);
     }
 
     /**

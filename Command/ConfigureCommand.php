@@ -37,8 +37,10 @@ EOT
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $configure = $this->getContainer()->get('jordillonch_deployer.configure');
-        $rootDir = $this->getContainer()->get('kernel')->getRootDir();
-        $configure->readParametersFile($rootDir . '/config/parameters.yml');
+        $rootDir = $this->getContainer()->getParameter('kernel.root_dir') . '/../';
+        $deployConfig = $this->getContainer()->getParameter('jordi_llonch_deploy.config');
+        $parametersFile = $rootDir . DIRECTORY_SEPARATOR . $deployConfig['servers_parameter_file'];
+        $configure->readParametersFile($parametersFile);
 
         // Validations
         $zone = $input->getArgument('zone');

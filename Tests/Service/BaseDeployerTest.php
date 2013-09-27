@@ -294,8 +294,7 @@ class BaseDeployerTest extends \PHPUnit_Framework_TestCase
     {
         $this->fakeDeployer->initialize();
         $this->fakeDeployer->setNewVersion('20130102_000000_LAST_VERSION_HASH');
-        $this->fakeDeployer->shouldReceive('isNewServer')->andReturn(true)->twice();
-        $this->fakeDeployer->shouldReceive('copyOldVersions')->andReturn(true)->twice();
+        $this->fakeDeployer->shouldReceive('syncronize')->andReturn(true)->once();
         $this->fakeDeployer->shouldReceive('rsync2Servers')->with('/tmp/test_deploy_bundle/local_repo/test_zone/code/20130102_000000_LAST_VERSION_HASH', '/tmp/test_deploy_bundle/remote/var/www/repo2/test_zone/code', '');
 
         $this->fakeDeployer->code2Servers();
