@@ -500,13 +500,18 @@ abstract class BaseDeployer implements DeployerInterface
         foreach ($finder as $file) $listLocalCodeDir[$file->getBasename()] = $file->getRealPath();
 
         // Find all versions code in remote server
+        $this->logger->debug('remote dirs to sync: ');
         $r = $this->execRemoteServers('ls ' . $this->getRemoteCodeDir(), array($server));
         $listRemoteCodeDir = explode("\n", $r[$server]['output']);
+        foreach ($listRemoteCodeDir as $key => $item) $listRemoteCodeDir[$key] = trim($item);
+
+        $this->logger->debug('local dirs to sync: ' . print_r($listLocalCodeDir, true));
+        $this->logger->debug('remote dirs to sync: ' . print_r($listRemoteCodeDir, true));
 
         // Sync
         foreach ($listLocalCodeDir as $basename => $realPath) {
             if(!in_array($basename, $listRemoteCodeDir)) {
-                $this->rsync2Servers($realPath, $this->getRemoteCodeDir(), $rsyncParams);
+                $this->rsync($realPath, $server, $this->getRemoteCodeDir(), $rsyncParams);
             }
         }
     }
