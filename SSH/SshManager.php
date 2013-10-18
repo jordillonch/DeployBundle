@@ -70,6 +70,13 @@ class SshManager {
             $r[$server]['exit_code'] = $ssh->exec($command);
             $r[$server]['output'] = $ssh->getLastOutput();
             $r[$server]['error'] = $ssh->getLastError();
+
+            // Bypass error for 'tcgetattr: Invalid argument'
+            if(strpos($r[$server]['error'], 'tcgetattr: Invalid argument') !== false) {
+                $this->logger->debug('bypassed error: ' . $r[$server]['error']);
+                $r[$server]['error'] = '';
+                $r[$server]['exit_code'] = 0;
+            }
         }
 
         return $r;

@@ -694,7 +694,7 @@ abstract class BaseDeployer implements DeployerInterface
         foreach($r as $server => $item) {
             $this->logger->debug('exec exit_code: ' . $item['exit_code']);
             if(!empty($item['output'])) $this->logger->debug('exec output: ' . $item['output']);
-            if(!empty($item['error']) && $item['error'] != 'tcgetattr: Invalid argument' . "\n") $this->logger->debug('exec error: ' . $item['error']);
+            if(!empty($item['error'])) $this->logger->debug('exec error: ' . $item['error']);
         }
 
         return $r;
