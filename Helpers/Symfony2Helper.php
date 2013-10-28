@@ -22,7 +22,12 @@ class Symfony2Helper extends Helper {
     }
 
     /**
-     * Do a cache:warmup for production environment
+     * Do a cache:warmup for production environment.
+     *
+     * WARNING: This warmup it is not a secure operation because serialized data could be corrupted.
+     *          Use cacheWarmUpOnServers() instead.
+     *
+     * @deprecated
      */
     public function cacheWarmUp()
     {
@@ -42,5 +47,18 @@ class Symfony2Helper extends Helper {
         $filesHelper = new FilesHelper();
         $filesHelper->filesReplacePattern($paths, $pattern, $replace);
         $this->getDeployer()->exec('chmod -R a+wr ' . $localNewRepositoryDir . '/app/cache');
+    }
+
+    /**
+     * Do a cache:warmup for production environment.
+     *
+     * This operation should be executed after code2Servers() operation.
+     */
+    public function cacheWarmupOnServers()
+    {
+        $remoteNewRepositoryDir = $this->getDeployer()->getRemoteNewRepositoryDir();
+        $this->getDeployer()->execRemoteServers('rm -rf ' . $remoteNewRepositoryDir . '/app/cache');
+        $this->getDeployer()->execRemoteServers('php ' . $remoteNewRepositoryDir . '/app/console cache:warmup --env=prod --no-debug');
+        $this->getDeployer()->execRemoteServers('chmod -R a+wr ' . $remoteNewRepositoryDir . '/app/cache');
     }
 }
