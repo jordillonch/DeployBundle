@@ -659,9 +659,16 @@ Helpers to manage composer installation and some commands.
 
 For now only provides a method to do a cache warm up.
 
+`$this->getHelper('symfony2')->cacheWarmupOnServers()`
+
+* Do a cache:warmup for production environment. This operation should be executed after code2Servers() operation. 
+
+
+##### Deprecated:
+
 `$this->getHelper('symfony2')->cacheWarmUp()`
 
-* Do a cache:warmup for production environment
+* This warmup it is not a secure operation because serialized data could be corrupted.
 
 
 #### GitHub
