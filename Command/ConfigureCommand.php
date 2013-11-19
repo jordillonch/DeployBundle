@@ -69,10 +69,21 @@ EOT
         }
 
         $configure->writeParametersFile();
+        $this->cacheClear();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
 
+    }
+
+    protected function cacheClear()
+    {
+        $realCacheDir = $this->getContainer()->getParameter('kernel.cache_dir');
+        $oldCacheDir = $realCacheDir . '_old';
+        $filesystem = $this->getContainer()->get('filesystem');
+        $this->getContainer()->get('cache_clearer')->clear($realCacheDir);
+        $filesystem->rename($realCacheDir, $oldCacheDir);
+        $filesystem->remove($oldCacheDir);
     }
 }
