@@ -12,7 +12,8 @@
         }
     ],
     "require": {
-        "php":             ">=5.4.0"
+        "php":                 ">=5.4.0",
+        "yriveiro/php-fslock": "0.1"
     },
     "require-dev":{
         "symfony/symfony": "2.3.*",

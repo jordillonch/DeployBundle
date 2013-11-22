@@ -24,6 +24,11 @@ class Engine
     protected $helper = array();
 
     /**
+     * @var LockInterface
+     */
+    protected $lock;
+
+    /**
      * @var OutputInterface
      */
     protected $output;
@@ -37,9 +42,10 @@ class Engine
      * @param ZoneManager $zoneManager
      * @param $dryMode
      */
-    public function __construct(ZoneManager $zoneManager)
+    public function __construct(ZoneManager $zoneManager, LockInterface $lock)
     {
         $this->zoneManager = $zoneManager;
+        $this->lock = $lock;
     }
 
     /**
@@ -194,43 +200,7 @@ class Engine
      */
     protected function call($name, $arguments, $lambdaRollback, $silent=null)
     {
-        // Silent
-        if(!is_null($this->silent)) $silent = $this->silent;
-        if(is_null($silent)) $silent = false;
-
-        $response = array();
-        try
-        {
-            foreach($this->zoneManager->getZonesNames() as $zone)
-            {
-                if(!$silent) $this->output->writeln('<info>[' . $zone . ']</info>');
-                $response[$zone] = call_user_func_array(array($this->zoneManager->getZone($zone), $name), $arguments);
-            }
-        }
-        catch (\Exception $e)
-        {
-            // Log error
-            $this->logger->critical($e->getMessage());
-
-            foreach($this->zoneManager->getZonesNames() as $zone)
-            {
-                if(!$silent) $this->output->writeln('<error>ROLLBACK [' . $zone . ']</error>');
-                try
-                {
-                    $zoneObj = $this->zoneManager->getZone($zone);
-                    $lambdaRollback($zoneObj, $this->dryMode);
-                }
-                catch (\Exception $e) {
-                    // Log error
-                    $this->logger->critical($e->getMessage());
-                }
-
-                $response[$zone] = false;
-            }
-
-            // Log error
-            $this->logger->critical($e->getMessage());
-        }
+        $response = $this->callForEveryZone($name, $arguments, $lambdaRollback, $silent);
 
         return $response;
     }
@@ -246,5 +216,80 @@ class Engine
     public function getHelpersConfig()
     {
         return $this->helper;
+    }
+
+    /**
+     * @param $name
+     * @param $arguments
+     * @param $lambdaRollback
+     * @param $silent
+     * @return array
+     */
+    protected function callForEveryZone($name, $arguments, $lambdaRollback, $silent=null)
+    {
+        // Silent
+        if(!is_null($this->silent)) $silent = $this->silent;
+        if(is_null($silent)) $silent = false;
+
+        $response = array();
+        try {
+            foreach ($this->zoneManager->getZonesNames() as $zone) {
+                if (!$silent) $this->output->writeln('<info>[' . $zone . ']</info>');
+                $response[$zone] = call_user_func_array(array($this->zoneManager->getZone($zone), $name), $arguments);
+            }
+        } catch (\Exception $e) {
+            // Log error
+            $this->logger->critical($e->getMessage());
+
+            foreach ($this->zoneManager->getZonesNames() as $zone) {
+                if (!$silent) $this->output->writeln('<error>ROLLBACK [' . $zone . ']</error>');
+                try {
+                    $zoneObj = $this->zoneManager->getZone($zone);
+                    $lambdaRollback($zoneObj, $this->dryMode);
+                } catch (\Exception $e) {
+                    // Log error
+                    $this->logger->critical($e->getMessage());
+                }
+
+                $response[$zone] = false;
+            }
+
+            // Log error
+            $this->logger->critical($e->getMessage());
+        }
+
+        return $response;
+    }
+
+    public function adquireZonesLockOrThrowException()
+    {
+        if (!$this->adquireZonesLock()) throw new \Exception('There are zones locked.');
+    }
+
+    protected function adquireZonesLock()
+    {
+        $allZonesLockAdquired = true;
+        foreach ($this->zoneManager->getZonesNames() as $zone) {
+            if(!$this->lock->acquire($zone)) {
+                $allZonesLockAdquired = false;
+                break;
+            }
+        }
+
+        if(!$allZonesLockAdquired) {
+            $this->lock->releaseAll();
+        }
+
+        return $allZonesLockAdquired;
+    }
+
+    public function releaseZonesLock()
+    {
+        $this->lock->releaseAll();
+    }
+
+    public function __destruct()
+    {
+        $this->releaseZonesLock();
     }
 }

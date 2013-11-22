@@ -63,7 +63,7 @@ class DeployersCompilerPass implements CompilerPassInterface
 
         // Deployer engine
         $engineClass = $container->getParameter('jordillonch_deployer.engine.class');
-        $engine = new Definition($engineClass, array($zoneManagerDefinition));
+        $engine = new Definition($engineClass, array($zoneManagerDefinition, $container->findDefinition('jordillonch_deployer.locker')));
         $engine->addMethodCall('setConfigGeneralConfig', array($generalConfig));
         $engine->addMethodCall('setConfigZonesConfig', array($zonesConfig));
 

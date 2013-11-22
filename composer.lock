@@ -3,9 +3,54 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "f46efa82a11c33cd259eea10043e9ea7",
+    "hash": "99a43a9d4943d7c1808db320d357084f",
     "packages": [
-
+        {
+            "name": "yriveiro/php-fslock",
+            "version": "0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/yriveiro/php-fslock.git",
+                "reference": "e60ef4bdbf95a0cf07c43daf43a511bb435518b0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/yriveiro/php-fslock/zipball/e60ef4bdbf95a0cf07c43daf43a511bb435518b0",
+                "reference": "e60ef4bdbf95a0cf07c43daf43a511bb435518b0",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "3.7.*",
+                "satooshi/php-coveralls": "dev-master"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "FSLock": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Yago Riveiro",
+                    "email": "yago.riveiro@gmail.com"
+                }
+            ],
+            "description": "A simple lock implementation using flock.",
+            "keywords": [
+                "flock",
+                "lock",
+                "lock file",
+                "php"
+            ],
+            "time": "2013-09-29 01:48:42"
+        }
     ],
     "packages-dev": [
         {

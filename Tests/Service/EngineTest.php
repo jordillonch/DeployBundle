@@ -114,7 +114,11 @@ class EngineTest extends \PHPUnit_Framework_TestCase
      */
     protected function getEngine($zoneManager)
     {
-        $engine = new Engine($zoneManager);
+        $locker = \Mockery::mock('JordiLlonch\Bundle\DeployBundle\Service\LockInterface');
+//        $locker->shouldReceive('acquire')->andReturn(true);
+//        $locker->shouldReceive('release')->andReturn(true);
+        $locker->shouldReceive('releaseAll')->andReturn(true);
+        $engine = new Engine($zoneManager, $locker);
         $engine->setLogger(new NullLogger());
         $output = \Mockery::mock('Symfony\Component\Console\Output\OutputInterface');
         $output->shouldReceive('writeln');

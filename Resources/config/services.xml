@@ -10,5 +10,7 @@
 
     <services>
         <service id="jordillonch_deployer.configure" class="JordiLlonch\Bundle\DeployBundle\Service\Configure" />
+        <service id="jordillonch_deployer.locker.fs" class="JordiLlonch\Bundle\DeployBundle\Service\LockFS" />
+        <service id="jordillonch_deployer.locker" alias="jordillonch_deployer.locker.fs" />
     </services>
 </container>
