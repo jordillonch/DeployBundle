@@ -25,6 +25,7 @@ class Configure
 
     const OUTPUT_YML = 0;
     const OUTPUT_JSON = 1;
+    const OUTPUT_ARRAY = 2;
 
     /**
      * @param $path
@@ -104,6 +105,9 @@ class Configure
             case self::OUTPUT_YML:
                 $output = Yaml::dump($this->parameters[$zone]['urls']);
                 break;
+            case self::OUTPUT_ARRAY:
+                $output = $this->parameters[$zone]['urls'];
+                break;
         }
 
         return $output;
@@ -122,7 +126,7 @@ class Configure
      * @param $url
      * @return array
      */
-    protected function sanitizeUrl($url)
+    public function sanitizeUrl($url)
     {
         $url = explode(',', $url);
         $url = array_map(function($item) { return trim($item); }, $url);

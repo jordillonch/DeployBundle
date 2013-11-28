@@ -220,6 +220,22 @@ abstract class BaseDeployer implements DeployerInterface
         $this->helperSet->setDeployer($this);
     }
 
+    /**
+     * @param mixed $urls
+     */
+    public function setUrls($urls)
+    {
+        $this->urls = $urls;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getUrls()
+    {
+        return $this->urls;
+    }
+
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
