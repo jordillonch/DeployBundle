@@ -263,7 +263,7 @@ class Engine
 
     public function adquireZonesLockOrThrowException()
     {
-        if (!$this->adquireZonesLock()) throw new \Exception('There are zones locked.');
+        if (!$this->adquireZonesLock()) throw new \Exception('There are locked zones. Try again in a while.');
     }
 
     protected function adquireZonesLock()
