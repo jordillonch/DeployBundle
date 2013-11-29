@@ -287,9 +287,4 @@ class Engine
     {
         $this->lock->releaseAll();
     }
-
-    public function __destruct()
-    {
-        $this->releaseZonesLock();
-    }
 }
