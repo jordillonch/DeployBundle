@@ -21,9 +21,10 @@ class ComposerHelper extends Helper {
     /**
      * Install composer.phar in the new repository dir
      */
-    public function install()
+    public function install($installDirectory = null)
     {
-        $this->getDeployer()->exec('curl -sS https://getcomposer.org/installer | php -- --install-dir=' . $this->getDeployer()->getLocalNewRepositoryDir());
+        if (is_null($installDirectory)) $installDirectory = $this->getDeployer()->getLocalNewRepositoryDir();
+        $this->getDeployer()->exec('curl -sS https://getcomposer.org/installer | php -- --install-dir=' . $installDirectory);
     }
 
     /**
@@ -31,12 +32,13 @@ class ComposerHelper extends Helper {
      * If environment is dev or test --dev parameter is added to composer install
      * If environment is prod --no-dev parameter is added to composer install
      */
-    public function executeInstall()
+    public function executeInstall($workingDirectory = null)
     {
+        if (is_null($workingDirectory)) $workingDirectory = $this->getDeployer()->getLocalNewRepositoryDir();
         $composerNoDev = '';
         if ($this->getDeployer()->getEnvironment() == 'dev')  $composerNoDev = ' --dev';
         if ($this->getDeployer()->getEnvironment() == 'test') $composerNoDev = ' --dev';
         if ($this->getDeployer()->getEnvironment() == 'prod') $composerNoDev = ' --no-dev';
-        $this->getDeployer()->exec('php ' . $this->getDeployer()->getLocalNewRepositoryDir() . '/composer.phar --working-dir=' . $this->getDeployer()->getLocalNewRepositoryDir() . ' install --optimize-autoloader' . $composerNoDev);
+        $this->getDeployer()->exec('php ' . $workingDirectory . '/composer.phar --working-dir=' . $workingDirectory . ' install --optimize-autoloader' . $composerNoDev);
     }
 }
