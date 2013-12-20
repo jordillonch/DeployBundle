@@ -32,13 +32,14 @@ class ComposerHelper extends Helper {
      * If environment is dev or test --dev parameter is added to composer install
      * If environment is prod --no-dev parameter is added to composer install
      */
-    public function executeInstall($workingDirectory = null)
+    public function executeInstall($workingDirectory = null, $env = null)
     {
         if (is_null($workingDirectory)) $workingDirectory = $this->getDeployer()->getLocalNewRepositoryDir();
         $composerNoDev = '';
-        if ($this->getDeployer()->getEnvironment() == 'dev')  $composerNoDev = ' --dev';
-        if ($this->getDeployer()->getEnvironment() == 'test') $composerNoDev = ' --dev';
-        if ($this->getDeployer()->getEnvironment() == 'prod') $composerNoDev = ' --no-dev';
+        if (is_null($env)) $env = $this->getDeployer()->getEnvironment();
+        if ($env == 'dev')  $composerNoDev = ' --dev';
+        if ($env == 'test') $composerNoDev = ' --dev';
+        if ($env == 'prod') $composerNoDev = ' --no-dev';
         $this->getDeployer()->exec('php ' . $workingDirectory . '/composer.phar --working-dir=' . $workingDirectory . ' install --optimize-autoloader' . $composerNoDev);
     }
 }
