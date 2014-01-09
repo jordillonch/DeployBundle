@@ -459,7 +459,7 @@ abstract class BaseDeployer implements DeployerInterface
     {
         list($host, $port) = $this->extractHostPort($server);
         if ($host == 'localhost') $this->exec('cp -a "' . $originPath . '" "' . $serverPath . '"');
-        else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i \"' . $this->sshConfig['private_key_file'] . '\" -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" ' . $rsyncParams . ' "' . $originPath . '" "' . $host . ':' . $serverPath . '"');
+        else $this->exec('rsync -ar --delete -e "ssh -p ' . $port . ' -i \"' . $this->sshConfig['private_key_file'] . '\" -l ' . $this->sshConfig['user'] . ' -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\"" --exclude ".git" ' . $rsyncParams . ' "' . $originPath . '" "' . $host . ':' . $serverPath . '"');
     }
 
     /**
