@@ -91,7 +91,7 @@ class Engine
         if(empty($selectedZones) || empty($selectedZones[0])) throw new \Exception('Zones is required');
 
         // Check if all $selectedZones exist
-        if(count(array_diff($selectedZones, $this->zoneManager->getZonesNames()))) throw new \Exception('Zone does not exists.');
+        if(count(array_diff($selectedZones, $this->zoneManager->getZonesNames()))) throw new \Exception('Zone does not exist.');
 
         foreach($this->zoneManager->getZonesNames() as $zone)
         {
