@@ -62,6 +62,7 @@ class Git implements VcsInterface {
         if ($this->isProxy) {
             $urlParsed = parse_url($this->url);
             $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" --work-tree="' . $urlParsed['path'] . '" reset --hard HEAD');
+            $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" --work-tree="' . $urlParsed['path'] . '" checkout "' . $this->branch . '"');
             $this->exec('git --git-dir="' . $urlParsed['path'] . '/.git" --work-tree="' . $urlParsed['path'] . '" pull');
         }
 
