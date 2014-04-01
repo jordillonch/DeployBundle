@@ -11,6 +11,8 @@
 
 namespace JordiLlonch\Bundle\DeployBundle\Command;
 
+use Akamon\Bundle\DeployBundle\Service\Engine;
+use JordiLlonch\Bundle\DeployBundle\Service\BaseDeployer;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,6 +22,7 @@ use Monolog\Handler\StreamHandler;
 
 abstract class BaseCommand extends ContainerAwareCommand
 {
+    /** @var Engine */
     protected $deployer;
 
     protected function configure()

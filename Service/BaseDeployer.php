@@ -50,6 +50,7 @@ abstract class BaseDeployer implements DeployerInterface
     protected $helpersConfig;
     protected $newVersionRollback;
     protected $currentVersionRollback;
+    protected $vcsType;
 
     /**
      * @var LoggerInterface
@@ -185,6 +186,7 @@ abstract class BaseDeployer implements DeployerInterface
         $this->checkoutBranch = $config['checkout_branch'];
         $this->remoteRepositoryDir = $config['repository_dir'];
         $this->remoteProductionDir = $config['production_dir'];
+        $this->vcsType = $config['vcs'];
         if (!empty($config['checkout_proxy'])) $this->checkoutProxy = $config['checkout_proxy'];
         if (!empty($config['clean_max_deploys'])) $this->cleanMaxDeploys = $config['clean_max_deploys'];
         if (!empty($config['sudo'])) $this->sudo = $config['sudo'];
@@ -209,8 +211,7 @@ abstract class BaseDeployer implements DeployerInterface
             $this->newVersion = null;
 
         // vcs
-        $vcsFactory = new VcsFactory($this->checkoutUrl, $this->checkoutBranch, $this->checkoutProxy, $this->dryMode);
-        $this->setVcs($vcsFactory->create($config['vcs']));
+        $this->createVcs();
 
         // ssh
         $this->setSshManager(new SshManager($config['ssh']));
@@ -968,4 +969,19 @@ abstract class BaseDeployer implements DeployerInterface
         return $arrListDir;
     }
 
+    /**
+     * @param $branch
+     */
+    public function updateBranch($branch)
+    {
+        $this->checkoutBranch = $branch;
+        $this->createVcs();
+    }
+
+    protected function createVcs()
+    {
+        $vcsFactory = new VcsFactory($this->checkoutUrl, $this->checkoutBranch, $this->checkoutProxy, $this->dryMode);
+        $this->setVcs($vcsFactory->create($this->vcsType));
+        if ($this->getLogger()) $this->getVcs()->setLogger($this->getLogger());
+    }
 }

@@ -147,7 +147,7 @@ class Engine
     /**
      * Download code that it will be put in production
      */
-    public function runDownloadCode()
+    public function runDownloadCode($branch = null)
     {
         $this->logger->debug('[Download]');
 
@@ -157,7 +157,8 @@ class Engine
             $zone->runDownloadCodeRollback();
             if (!$dryMode) $zone->setNewVersionRollback();
         };
-        return $this->call('runDownloadCode', array($newVersion), $funcRollback);
+        if ($branch) $this->call('updateBranch', array($branch), function(){}, true);
+        return $this->call('runDownloadCode', array($newVersion, $branch), $funcRollback);
     }
 
     /**
