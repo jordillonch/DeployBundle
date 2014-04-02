@@ -225,7 +225,7 @@ abstract class BaseDeployer implements DeployerInterface
     /**
      * @param boolean $force
      */
-    public function setForce($force)
+    public function setForce($force = true)
     {
         $this->force = $force;
     }
