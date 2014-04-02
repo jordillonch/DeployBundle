@@ -12,6 +12,7 @@
 namespace JordiLlonch\Bundle\DeployBundle\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\Output;
 
@@ -20,6 +21,13 @@ class Code2ProductionCommand extends BaseCommand
     protected function configure()
     {
         parent::configure();
+
+        $this->addOption(
+            'force',
+            null,
+            InputOption::VALUE_NONE,
+            'Useful for some tasks that have to be done in the deployer.'
+        );
 
         $this
             ->setName('deployer:code2production')
@@ -39,6 +47,8 @@ EOT
             $confirmation = $dialog->askConfirmation($output, '<question>WARNING! You are about to put code to production. Are you sure you wish to continue? (y/n)</question>', false);
         }
         else $confirmation = true;
+
+        if($input->getOption('force')) $this->deployer->setForce();
 
         if ($confirmation === true) {
             $this->deployer->runCode2Production();

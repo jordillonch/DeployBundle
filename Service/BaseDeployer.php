@@ -42,6 +42,7 @@ abstract class BaseDeployer implements DeployerInterface
     protected $checkoutProxy = false;
     protected $cleanMaxDeploys = 7;
     protected $dryMode = false;
+    protected $force = false;
     protected $newVersion;
     protected $currentVersion;
     protected $output;
@@ -219,6 +220,22 @@ abstract class BaseDeployer implements DeployerInterface
 
         // After define config, set deployer for helpers because now there are helpers configs
         $this->helperSet->setDeployer($this);
+    }
+
+    /**
+     * @param boolean $force
+     */
+    public function setForce($force)
+    {
+        $this->force = $force;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function getForce()
+    {
+        return $this->force;
     }
 
     /**
