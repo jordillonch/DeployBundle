@@ -17,6 +17,7 @@ use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\Loader;
 use Symfony\Component\Validator\Mapping\Loader\YamlFileLoader;
 use Symfony\Component\Yaml\Yaml;
+use RuntimeException;
 
 /**
  * This is the class that loads and manages your bundle configuration
@@ -45,6 +46,9 @@ class JordiLlonchDeployExtension extends Extension
         foreach ($configs as $key => $config) {
             if(isset($config['config']['servers_parameter_file'])) {
                 $file = $container->getParameter('kernel.root_dir') . '/../' . $config['config']['servers_parameter_file'];
+                if (!file_exists($file)) {
+                    throw new RuntimeException(sprintf('Server parameter file does not exists: %s.', $file));
+                }
                 $configServers = Yaml::parse($file);
                 $config['zones'] = \array_replace_recursive($config['zones'], $configServers);
                 $configs[$key] = $config;
