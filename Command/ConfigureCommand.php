@@ -51,12 +51,18 @@ EOT
         {
             case 'add' :
                 $configure->add($zone, $url);
+                $configure->writeParametersFile();
+                $this->cacheClear();
                 break;
             case 'set' :
                 $configure->set($zone, $url);
+                $configure->writeParametersFile();
+                $this->cacheClear();
                 break;
             case 'rm' :
                 $configure->rm($zone, $url);
+                $configure->writeParametersFile();
+                $this->cacheClear();
                 break;
             case 'list' :
                 $output->writeln($configure->listUrls($zone));
@@ -67,9 +73,6 @@ EOT
             default :
                 throw new \Exception('Actions must be: add, set, rm, list or list_json');
         }
-
-        $configure->writeParametersFile();
-        $this->cacheClear();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
